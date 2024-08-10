@@ -1,0 +1,10 @@
+name = "RPCF"
+uuid = "ea847659-7271-4841-b0fc-79dd10df6815"
+authors = ["Thomas Burton <tburton5572@gmail.com>"]
+version = "0.1.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
