@@ -27,6 +27,8 @@ function Base.getproperty(g::RPCFGrid, name::Symbol)
     end
 end
 
+Base.size(::RPCFGrid{S}) where {S} = S
+
 # interface methods
 ReSolverInterface.points(g::RPCFGrid{S}) where {S} = (g.y, ntuple(i -> (0:(S[i + 1] - 1))/(S[i + 1])*(2π/g.domain[i]), 2)...)
 ReSolverInterface.volume(g::RPCFGrid) = 2*g.L*g.T
