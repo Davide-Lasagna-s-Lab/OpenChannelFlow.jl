@@ -1,4 +1,6 @@
-# Definitions for the concrete implementation of the RPCF grid.
+# Implementation of the RPCF grid
+
+# TODO: add transforms to the fields of the grid
 
 struct RPCFGrid{S, DM<:AbstractMatrix} <: AbstractGrid{Float64, 3}
     y::Vector{Float64}
