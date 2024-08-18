@@ -3,5 +3,5 @@
     # fourier transforms
     # dot product
     # pointwise multiplication
-    # vector calculus
+    # derivatives
 end

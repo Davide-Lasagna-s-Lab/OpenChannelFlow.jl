@@ -9,5 +9,6 @@ export RPCFGrid, points, volume
 include("fft.jl")
 include("grid.jl")
 include("scalarfield.jl")
+include("vectorcalculus.jl")
 
 end

@@ -1,5 +1,7 @@
 # Implementation of the RPCF scalar field
 
+# TODO: implement and test derivative methods
+
 struct RPCFField{S, DM, DEALIAS, PLAN, IPLAN} <: AbstractScalarField{3, Float64}
     grid::RPCFGrid{S, DM, DEALIAS, PLAN, IPLAN}
     spectral_field::Array{3, ComplexF64}
@@ -54,3 +56,34 @@ end
 # --------------- #
 FFT!(u::RPCFField) = (grid(u).plans(u.spectral_field, u.physical_field); return u)
 IFFT!(u::RPCFField) = (grid(u).plans(u.physical_field, u.spectral_field); return u)
+
+
+# ------------------ #
+# derivative methods #
+# ------------------ #
+function ddy!(dudy::RPCFField{S}, u::RPCFField{S}) where {S} end
+function d2dy2!(d2udy2::RPCFField{S}, u::RPCFField{S}) where {S} end
+function ddz!(dudz::RPCFField{S}, u::RPCFField{S}) where {S} end
+function d2dz2!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S} end
+
+function ReSolverInterface.ddt!(dudt::RPCFField{S}, u::RPCFField{S}) where {S}
+    ω = grid(u).ω
+
+    # loop over positive temporal modes multiplying by modifier
+    @inbounds begin
+        for nt in 1:((S[3] >> 1) + 1), nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
+            dudt[ny, nz, nt] = (1im*(nt - 1)*ω)*u[ny, nz, nt]
+        end
+    end
+
+    # loop over negative temporal modes multiplying by modifier
+    if Nt > 1
+        @inbounds begin
+            for nt in ((S[3] >> 1) + 2):S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
+                dudt[ny, nz, nt] = (1im*(nt - 1 - Nt)*ω)*u[ny, nz, nt]
+            end
+        end
+    end
+
+    return dudt
+end
