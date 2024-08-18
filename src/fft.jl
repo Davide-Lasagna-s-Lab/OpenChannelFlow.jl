@@ -1,6 +1,7 @@
 # Fourier transforms for the scalar field
 
 # TODO: test the transformation methods
+# FIXME: padding size is not correct
 
 struct FFTPlans{DEALIAS, PLAN, IPLAN}
     plan::PLAN
@@ -26,7 +27,7 @@ struct FFTPlans{DEALIAS, PLAN, IPLAN}
         new{dealias, typeof(plan), typeof(iplan)}(plan, iplan, spectral_array, physical_array)
     end
 end
-
+get_plan_types(::FFTPlans{DEALIAS, PLAN, IPLAN}) where {DEALIAS, PLAN, IPLAN} = (PLAN, IPLAN)
 
 # ---------------------- #
 # transformation methods #

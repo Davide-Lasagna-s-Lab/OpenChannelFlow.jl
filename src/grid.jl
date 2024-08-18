@@ -1,8 +1,6 @@
 # Implementation of the RPCF grid
 
-# TODO: add transforms to the fields of the grid
-
-struct RPCFGrid{S, DM<:AbstractMatrix} <: AbstractGrid{Float64, 3}
+struct RPCFGrid{S, DM<:AbstractMatrix, DEALIAS, PLAN, IPLAN} <: AbstractGrid{Float64, 3}
     y::Vector{Float64}
     Nz::Int
     Nt::Int
@@ -10,8 +8,12 @@ struct RPCFGrid{S, DM<:AbstractMatrix} <: AbstractGrid{Float64, 3}
     Dy::DM
     Dy2::DM
     ws::Vector{Float64}
+    plans::FFTPlans{DEALIAS, PLAN, IPLAN}
 
-    RPCFGrid(y, Nz, Nt, β, ω, Dy::DM, Dy2::DM, ws) where {DM} = new{(length(y), Nz, Nt), DM}(y, Nz, Nt, [β, ω], Dy, Dy2, ws)
+    function RPCFGrid(y, Nz, Nt, β, ω, Dy::DM, Dy2::DM, ws; dealias::Bool=true, pad::Float64=3/2, flags::UInt32=FFTW.EXHAUSTIVE, timelimit::Real=FFTW.NO_TIMELIMIT) where {DM}
+        plans = FFTPlans(length(y), Nz, Nt, dealias=dealias, pad=pad, flags=flags, timelimit=timelimit)
+        new{(length(y), Nz, Nt), DM, dealias, get_plan_types(plans)...}(y, Nz, Nt, [β, ω], Dy, Dy2, ws, plans)
+    end
 end
 
 # getter-setter methods

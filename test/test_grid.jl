@@ -14,7 +14,7 @@
     β = π
 
     # test point generation
-    g1 = RPCFGrid(y, Nz, Nt, β, ω, D1, D_sec, w1)
+    g1 = RPCFGrid(y, Nz, Nt, β, ω, D1, D_sec, w1, dealias=false, flags=FFTW.ESTIMATE)
     gpoints = points(g1)
     @test gpoints[1] == y
     @test gpoints[2] ≈ range(0, 2π*(1 - 1/Nz), length = Nz)/β # precision differences in operations
@@ -25,9 +25,9 @@
     @test volume(g1) == 8π/ω
 
     # test comparison
-    g2 = RPCFGrid(y, Nz, Nt + 1, β, ω, D1, D_sec, w1)
-    g3 = RPCFGrid(rand(Float64, Ny), Nz, Nt, β, ω, D1, D_sec, w1)
-    g4 = RPCFGrid(y, Nz, Nt, β, ω, rand(Float32, (Ny, Ny)), D_sec, w1)
+    g2 = RPCFGrid(y, Nz, Nt + 1, β, ω, D1, D_sec, w1, dealias=false, flags=FFTW.ESTIMATE)
+    g3 = RPCFGrid(rand(Float64, Ny), Nz, Nt, β, ω, D1, D_sec, w1, dealias=false, flags=FFTW.ESTIMATE)
+    g4 = RPCFGrid(y, Nz, Nt, β, ω, rand(Float32, (Ny, Ny)), D_sec, w1, dealias=false, flags=FFTW.ESTIMATE)
     @test g1 != g2
     @test g1 != g3
     @test g1 == g4
