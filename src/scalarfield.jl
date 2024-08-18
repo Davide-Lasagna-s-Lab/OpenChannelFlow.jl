@@ -1,16 +1,14 @@
 # Implementation of the RPCF scalar field
 
-# TODO: implement fourier transforms
-
-struct RPCFField{S, DM, DEALIAS} <: AbstractScalarField{3, Float64}
-    grid::RPCFGrid{S, DM}
+struct RPCFField{S, DM, DEALIAS, PLAN, IPLAN} <: AbstractScalarField{3, Float64}
+    grid::RPCFGrid{S, DM, DEALIAS, PLAN, IPLAN}
     spectral_field::Array{3, ComplexF64}
     physical_field::Array{3, Float64}
 
-    function RPCFField(g::RPCFGrid{S, DM}; dealias::Bool=true) where {S, DM}
+    function RPCFField(g::RPCFGrid{S, DM, DEALIAS, PLAN, IPLAN}) where {S, DM, DEALIAS, PLAN, IPLAN}
         spectral_field = zeros(ComplexF64, S[1], (S[2] >> 1) + 1, S[3])
-        physical_field = dealias ? zeros(Float64, S[1], padded_size(S[2:3]...)...) : zeros(Float64, S...)
-        new{S, DM, dealias}(g, spectral_field, physical_field)
+        physical_field = DEALIAS ? zeros(Float64, S[1], padded_size(S[2:3]...)...) : zeros(Float64, S...)
+        new{S, DM, DEALIAS, PLAN, IPLAN}(g, spectral_field, physical_field)
     end
 end
 
@@ -51,8 +49,8 @@ function ReSolverInterface.dot(u::RPCFField{S}, v::RPCFField{S}) where {S}
 end
 
 
-# ------------- #
-# other methods #
-# ------------- #
-function FFT!(u::RPCFField) end
-function IFFT!(u::RPCFField) end
+# --------------- #
+# utility methods #
+# --------------- #
+FFT!(u::RPCFField) = (grid(u).plans(u.spectral_field, u.physical_field); return u)
+IFFT!(u::RPCFField) = (grid(u).plans(u.physical_field, u.spectral_field); return u)
