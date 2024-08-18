@@ -1,5 +1,7 @@
 module RPCF
 
+using FFTW
+
 using ReSolverInterface
 
 export RPCFGrid, points, volume

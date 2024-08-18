@@ -54,7 +54,5 @@ end
 # ------------- #
 # other methods #
 # ------------- #
-function padded_size(Nz, Nt) end
-
 function FFT!(u::RPCFField) end
 function IFFT!(u::RPCFField) end
