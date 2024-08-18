@@ -1,13 +1,9 @@
 # Fourier transforms for the scalar field
 
-# TODO: test the transformation methods
-# FIXME: padding size is not correct
-
 struct FFTPlans{DEALIAS, PLAN, IPLAN}
     plan::PLAN
     iplan::IPLAN
     spectral_cache::Array{ComplexF64, 3}
-    physical_cache::Array{Float64, 3}
 
     function FFTPlans(Ny::Int, Nz::Int, Nt::Int; dealias::Bool=true, pad::Float64=3/2, flags::UInt32=FFTW.EXHAUSTIVE, timelimit::Real=FFTW.NO_TIMELIMIT)
         # construct arrays
@@ -22,9 +18,9 @@ struct FFTPlans{DEALIAS, PLAN, IPLAN}
 
         # construct plans
         plan = FFTW.plan_rfft(physical_array, [2, 3], flags=flags, timelimit=timelimit)
-        iplan = FFTW.plan_brfft(spectral_array, Nz, [2, 3], flags=flags, timelimit=timelimit)
+        iplan = dealias ? FFTW.plan_brfft(spectral_array, Nz_pad, [2, 3], flags=flags, timelimit=timelimit) : FFTW.plan_brfft(spectral_array, Nz, [2, 3], flags=flags, timelimit=timelimit)
 
-        new{dealias, typeof(plan), typeof(iplan)}(plan, iplan, spectral_array, physical_array)
+        new{dealias, typeof(plan), typeof(iplan)}(plan, iplan, spectral_array)
     end
 end
 get_plan_types(::FFTPlans{DEALIAS, PLAN, IPLAN}) where {DEALIAS, PLAN, IPLAN} = (PLAN, IPLAN)

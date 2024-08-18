@@ -1,6 +1,6 @@
 using Test
 
-using FFTW
+using FFTW, Random
 
 using RPCF
 
