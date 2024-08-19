@@ -21,9 +21,9 @@ ReSolverInterface.parent(u::RPCFField) = u.spectral_field
 ReSolverInterface.similar(u::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS} = RPCFField(grid(u), dealias=DEALIAS)
 
 function ReSolverInterface.mult!(uv::RPCFField{S, DM, DEALIAS}, u::RPCFField{S, DM, DEALIAS}, v::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS}
-    FFT!(u); FFT!(v)
+    IFFT!(u); IFFT!(v)
     uv.physical_field .= u.physical_field .* v.physical_field
-    IFFT!(uv)
+    FFT!(uv)
     return uv
 end
 

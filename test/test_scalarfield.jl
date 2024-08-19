@@ -1,12 +1,9 @@
 @testset "Scalar Field                          " begin
-    # fourier transforms
-    # dot product
-    # pointwise multiplication
-
     # define functions
-    dot1(y, z, t)       = (1 - y^2)*exp(cos(5.8*z))*cos(sin(ω*t))
-    dot2(y, z, t)       = cos(π*y)*(1 - y^2)*exp(sin(5.8*z))*(cos(ω*t)^2)
     u_fun(y, z, t)      = (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
+    v_fun(y, z, t)      = (1 - y^2)*exp(cos(5.8*z))*cos(sin(ω*t))
+    w_fun(y, z, t)      = cos(π*y)*(1 - y^2)*exp(sin(5.8*z))*(cos(ω*t)^2)
+    vw_fun(y, z, t)     = v_fun(y, z, t)*w_fun(y, z, t)
     dudy_fun(y, z, t)   = -2*y*exp(cos(5.8*z))*atan(sin(t))
     d2udy2_fun(y, z, t) = -2*exp(cos(5.8*z))*atan(sin(t))
     dudz_fun(y, z, t)   = -5.8*(1 - y^2)*sin(5.8*z)*exp(cos(5.8*z))*atan(sin(t))
@@ -48,11 +45,15 @@
     @test dudz.physical_field ≈ dudz_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
     @test d2udz2.physical_field ≈ d2udz2_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
 
-
     v = RPCFField(grid)
-    u.physical_field .= dot1.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
-    v.physical_field .= dot2.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
-    FFT!(u)
+    w = RPCFField(grid)
+    v.physical_field .= v_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
+    w.physical_field .= w_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
     FFT!(v)
-    @test dot(u, v)*β*ω ≈ 13.4066 rtol=1e-6
+    FFT!(w)
+    @test dot(v, w)*β*ω ≈ 13.4066 rtol=1e-6
+
+    vw = mult!(RPCFField(grid), v, w)
+    IFFT!(vw)
+    @test vw.physical_field ≈ vw_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
 end
