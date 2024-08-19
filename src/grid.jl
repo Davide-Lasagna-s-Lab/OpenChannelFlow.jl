@@ -1,6 +1,6 @@
 # Implementation of the RPCF grid
 
-struct RPCFGrid{S, DM<:AbstractMatrix, DEALIAS, PLAN, IPLAN} <: AbstractGrid{Float64, 3}
+struct RPCFGrid{S, DM<:AbstractMatrix, DEALIAS, PAD, PLAN, IPLAN} <: AbstractGrid{Float64, 3}
     y::Vector{Float64}
     Nz::Int
     Nt::Int
@@ -12,7 +12,7 @@ struct RPCFGrid{S, DM<:AbstractMatrix, DEALIAS, PLAN, IPLAN} <: AbstractGrid{Flo
 
     function RPCFGrid(y, Nz, Nt, β, ω, Dy::DM, Dy2::DM, ws; dealias::Bool=true, pad::Float64=3/2, flags::UInt32=FFTW.EXHAUSTIVE, timelimit::Real=FFTW.NO_TIMELIMIT) where {DM}
         plans = FFTPlans(length(y), Nz, Nt, dealias=dealias, pad=pad, flags=flags, timelimit=timelimit)
-        new{(length(y), Nz, Nt), DM, dealias, get_plan_types(plans)...}(y, Nz, Nt, [β, ω], Dy, Dy2, ws, plans)
+        new{(length(y), Nz, Nt), DM, dealias, pad, get_plan_types(plans)...}(y, Nz, Nt, [β, ω], Dy, Dy2, ws, plans)
     end
 end
 

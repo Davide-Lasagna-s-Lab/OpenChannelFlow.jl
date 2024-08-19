@@ -2,6 +2,8 @@ using Test
 
 using FFTW, Random
 
+using ChebUtils
+
 using RPCF
 
 include("test_fft.jl")
