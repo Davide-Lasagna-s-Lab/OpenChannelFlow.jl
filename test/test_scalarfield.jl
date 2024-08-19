@@ -4,6 +4,8 @@
     # pointwise multiplication
 
     # define functions
+    dot1(y, z, t)       = (1 - y^2)*exp(cos(5.8*z))*cos(sin(ω*t))
+    dot2(y, z, t)       = cos(π*y)*(1 - y^2)*exp(sin(5.8*z))*(cos(ω*t)^2)
     u_fun(y, z, t)      = (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
     dudy_fun(y, z, t)   = -2*y*exp(cos(5.8*z))*atan(sin(t))
     d2udy2_fun(y, z, t) = -2*exp(cos(5.8*z))*atan(sin(t))
@@ -18,7 +20,7 @@
     y = chebpts(Ny)
     D1 = chebdiff(Ny)
     D2 = chebddiff(Ny)
-    w = rand(Float64, Ny)
+    w = chebws(Ny)
     ω = 1.0
     β = 5.8
     grid = RPCFGrid(y, Nz, Nt, β, ω, D1, D2, w, flags=FFTW.ESTIMATE, dealias=false)
@@ -45,4 +47,12 @@
     @test d2udy2.physical_field ≈ d2udy2_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
     @test dudz.physical_field ≈ dudz_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
     @test d2udz2.physical_field ≈ d2udz2_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
+
+
+    v = RPCFField(grid)
+    u.physical_field .= dot1.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
+    v.physical_field .= dot2.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
+    FFT!(u)
+    FFT!(v)
+    @test dot(u, v)*β*ω ≈ 13.4066 rtol=1e-6
 end

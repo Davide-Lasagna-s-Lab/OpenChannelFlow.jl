@@ -5,7 +5,7 @@ using FFTW
 using ReSolverInterface
 
 export RPCFGrid, points, volume
-export RPCFField, FFT!, IFFT!
+export RPCFField, FFT!, IFFT!, dot, norm
 
 include("fft.jl")
 include("grid.jl")

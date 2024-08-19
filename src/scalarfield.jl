@@ -32,17 +32,17 @@ function ReSolverInterface.dot(u::RPCFField{S}, v::RPCFField{S}) where {S}
 
     # loop over top half plane exclusive of mean spanwise mode
     for nt in 1:S[3], nz in 2:((S[2] >> 1) + 1), ny in 1:S[1]
-        prod += p.grid.ws[ny]*real(dot(p[ny, nz, nt], q[ny, nz, nt]))
+        prod += grid(u).ws[ny]*real(dot(u[ny, nz, nt], v[ny, nz, nt]))
     end
 
     # loop over positive temporal modes for mean spanwise mode
     for nt in 2:((S[3] >> 1) + 1), ny in 1:S[1]
-        prod += p.grid.ws[ny]*real(dot(p[ny, 1, nt], q[ny, 1, nt]))
+        prod += grid(u).ws[ny]*real(dot(u[ny, 1, nt], v[ny, 1, nt]))
     end
 
     # evaluate mean component contribution
     for ny in 1:S[1]
-        prod += 0.5*p.grid.ws[ny]*real(dot(p[ny, 1, 1], q[ny, 1, 1]))
+        prod += 0.5*grid(u).ws[ny]*real(dot(u[ny, 1, 1], v[ny, 1, 1]))
     end
 
     return ((8π^2)/(grid(u).β*grid(u).ω))*prod
