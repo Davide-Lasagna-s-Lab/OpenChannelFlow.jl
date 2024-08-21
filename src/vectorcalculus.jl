@@ -1,7 +1,5 @@
 # method definitions for vector calculus and derivative operations
 
-# FIXME: need to find a way to define these methods without extra structs and working in place
-
 function ReSolverInterface.grad!(∇u::VectorField{3, RPCFField{S}}, u::RPCFField{S}) where {S}
     ∇u[1] .= 0.0
     ddy!(∇u[2], u)
@@ -9,31 +7,31 @@ function ReSolverInterface.grad!(∇u::VectorField{3, RPCFField{S}}, u::RPCFFiel
     return ∇u
 end
 
-struct divergence!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
+struct Divergence!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
     cache::RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN}
-    divergence(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}(RPCFField(g))
+    Divergence(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}(RPCFField(g))
 end
-function (f::divergence!{S})(div_u::RPCFField{S}, u::VectorField{3, RPCFField{S}}) where {S}
+function (f::Divergence!{S})(div_u::RPCFField{S}, u::VectorField{3, RPCFField{S}}) where {S}
     ddy!(div_u, u[2])
     div_u .+= ddz!(f.cache, u[3])
     return div_u
 end
 
-struct laplacian!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
+struct Laplacian!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
     cache::RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN}
-    laplacian!(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}(RPCFField(g))
+    Laplacian!(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}(RPCFField(g))
 end
-function (f::laplacian!{S})(Δu::RPCFField{S}, u::RPCFField{S}) where {S}
+function (f::Laplacian!{S})(Δu::RPCFField{S}, u::RPCFField{S}) where {S}
     d2dy2!(Δu, u)
     Δu .+= d2dz2!(f.cache, u)
     return Δu
 end
 
-struct convection!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
+struct Convection!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
     cache::Vector{RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN}}
-    convection!(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}([RPCFField(g) for _ in 1:2])
+    Convection!(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}([RPCFField(g) for _ in 1:2])
 end
-function (f::convection!{S})(u∇v::VectorField{3, RPCFField{S}}, u::VectorField{3, RPCFField{S}}, v::VectorField{3, RPCFField{S}}) where {S}
+function (f::Convection!{S})(u∇v::VectorField{3, RPCFField{S}}, u::VectorField{3, RPCFField{S}}, v::VectorField{3, RPCFField{S}}) where {S}
     mult!(u∇v[1], u[2], ddy!(f.cache[1], v[1]))
     u∇v[1] .+= mult!(f.cache[2], u[3], ddz!(f.cache[1], v[1]))
     mult!(u∇v[2], u[2], ddy!(f.cache[1], v[2]))
@@ -43,11 +41,11 @@ function (f::convection!{S})(u∇v::VectorField{3, RPCFField{S}}, u::VectorField
     return u∇v
 end
 
-struct convection2!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
+struct Convection2!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
     cache::Vector{RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN}}
-    convection2!(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}([RPCFField(g) for _ in 1:2])
+    Convection2!(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}([RPCFField(g) for _ in 1:2])
 end
-function (f::convection2!{S})(∇uv::VectorField{3, RPCFField{S}}, u::VectorField{3, RPCFField{S}}, v::VectorField{3, RPCFField{S}}) where {S}
+function (f::Convection2!{S})(∇uv::VectorField{3, RPCFField{S}}, u::VectorField{3, RPCFField{S}}, v::VectorField{3, RPCFField{S}}) where {S}
     ∇uv[1] .= 0.0
     mult!(∇uv[2], v[1], ddy!(f.cache[1], u[1]))
     ∇uv[2] .+= mult!(f.cache[2], v[2], ddy!(f.cache[1], u[2]))
