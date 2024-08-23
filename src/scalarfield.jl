@@ -20,12 +20,13 @@ ReSolverInterface.grid(u::RPCFField) = u.grid
 ReSolverInterface.parent(u::RPCFField) = u.spectral_field
 ReSolverInterface.similar(u::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS} = RPCFField(grid(u), dealias=DEALIAS)
 
-function ReSolverInterface.mult!(uv::RPCFField{S, DM, DEALIAS}, u::RPCFField{S, DM, DEALIAS}, v::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS}
-    IFFT!(u); IFFT!(v)
-    uv.physical_field .= u.physical_field .* v.physical_field
+function mult_add!(uv::RPCFField{S, DM, DEALIAS}, u::RPCFField{S, DM, DEALIAS}, v::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS}
+    IFFT!(u); IFFT!(v); IFFT!(uv)
+    uv.physical_field .+= u.physical_field .* v.physical_field
     FFT!(uv)
     return uv
 end
+ReSolverInterface.mult!(uv::RPCFField{S, DM, DEALIAS}, u::RPCFField{S, DM, DEALIAS}, v::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS} = (uv .= 0.0; return mult_add!(uv, u, v))
 
 function ReSolverInterface.dot(u::RPCFField{S}, v::RPCFField{S}) where {S}
     prod = 0.0
