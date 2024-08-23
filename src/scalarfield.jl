@@ -1,5 +1,8 @@
 # Implementation of the RPCF scalar field
 
+# TODO: implement derivative methods for vector fields
+# TODO: implement derivative methods to overwrite the original matrix (unsafe options for super efficient computations)
+
 struct RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN} <: AbstractScalarField{3, Float64}
     grid::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}
     spectral_field::Array{ComplexF64, 3}
@@ -60,6 +63,8 @@ IFFT!(u::RPCFField) = (grid(u).plans(u.physical_field, u.spectral_field); return
 # ------------------ #
 # derivative methods #
 # ------------------ #
+function ddy!(u::RPCFField{S}) where {S} end
+function d2dy2!(u::RPCFField{S}) where {S} end
 ddy!(dudy::RPCFField{S}, u::RPCFField{S}) where {S} = ReSolverInterface.mul!(dudy, grid(u).Dy, u)
 d2dy2!(d2udy2::RPCFField{S}, u::RPCFField{S}) where {S} = ReSolverInterface.mul!(d2udy2, grid(u).Dy2, u)
 
@@ -76,6 +81,7 @@ function ddz_add!(dudz::RPCFField{S}, u::RPCFField{S}) where {S}
     return dudz
 end
 ddz!(dudz::RPCFField{S}, u::RPCFField{S}) where {S} = (dudz .= 0.0; return ddz_add!(dudz, u))
+function ddz!(u::RPCFField{S}) where {S} end
 
 function d2dz2_add!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S}
     β = grid(u).β
@@ -90,6 +96,7 @@ function d2dz2_add!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S}
     return d2udz2
 end
 d2dz2!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S} = (d2udz2 .= 0.0; return d2dz2_add!(d2udz2, u))
+function d2dz2!(u::RPCFField{S}) where {S} end
 
 function ReSolverInterface.ddt!(dudt::RPCFField{S}, u::RPCFField{S}) where {S}
     ω = grid(u).ω
