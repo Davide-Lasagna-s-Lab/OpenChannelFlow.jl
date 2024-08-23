@@ -62,31 +62,33 @@ IFFT!(u::RPCFField) = (grid(u).plans(u.physical_field, u.spectral_field); return
 ddy!(dudy::RPCFField{S}, u::RPCFField{S}) where {S} = ReSolverInterface.mul!(dudy, grid(u).Dy, u)
 d2dy2!(d2udy2::RPCFField{S}, u::RPCFField{S}) where {S} = ReSolverInterface.mul!(d2udy2, grid(u).Dy2, u)
 
-function ddz!(dudz::RPCFField{S}, u::RPCFField{S}) where {S}
+function ddz_add!(dudz::RPCFField{S}, u::RPCFField{S}) where {S}
     β = grid(u).β
 
     # loop over spanwise modes multiplying by modifier
     @inbounds begin
         for nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
-            dudz[ny, nz, nt] = 1im*(nz - 1)*β*u[ny, nz, nt]
+            dudz[ny, nz, nt] += 1im*(nz - 1)*β*u[ny, nz, nt]
         end
     end
 
     return dudz
 end
+ddz!(dudz::RPCFField{S}, u::RPCFField{S}) where {S} = (dudz .= 0.0; return ddz_add!(dudz, u))
 
-function d2dz2!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S}
+function d2dz2_add!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S}
     β = grid(u).β
 
     # loop over spanwise modes multiplying by modifier
     @inbounds begin
         for nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
-            d2udz2[ny, nz, nt] = -(((nz - 1)*β)^2)*u[ny, nz, nt]
+            d2udz2[ny, nz, nt] += -(((nz - 1)*β)^2)*u[ny, nz, nt]
         end
     end
 
     return d2udz2
 end
+d2dz2!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S} = (d2udz2 .= 0.0; return d2dz2_add!(d2udz2, u))
 
 function ReSolverInterface.ddt!(dudt::RPCFField{S}, u::RPCFField{S}) where {S}
     ω = grid(u).ω

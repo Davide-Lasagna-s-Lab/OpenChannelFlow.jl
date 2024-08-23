@@ -7,23 +7,15 @@ function ReSolverInterface.grad!(∇u::VectorField{3, RPCFField{S}}, u::RPCFFiel
     return ∇u
 end
 
-struct Divergence!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
-    cache::RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN}
-    Divergence(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}(RPCFField(g))
-end
-function (f::Divergence!{S})(div_u::RPCFField{S}, u::VectorField{3, RPCFField{S}}) where {S}
+function ReSolverInterface.divergence!(div_u::RPCFField{S}, u::VectorField{3, RPCFField{S}}) where {S}
     ddy!(div_u, u[2])
-    div_u .+= ddz!(f.cache, u[3])
+    ddz_add!(div_u, u[3])
     return div_u
 end
 
-struct Laplacian!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
-    cache::RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN}
-    Laplacian!(g::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}) where {S, DM, DEALIAS, PAD, PLAN, IPLAN} = new{S, DM, DEALIAS, PAD, PLAN, IPLAN}(RPCFField(g))
-end
-function (f::Laplacian!{S})(Δu::RPCFField{S}, u::RPCFField{S}) where {S}
+function ReSolverInterface.laplacian!(Δu::RPCFField{S}, u::RPCFField{S}) where {S}
     d2dy2!(Δu, u)
-    Δu .+= d2dz2!(f.cache, u)
+    d2dz2!(Δu, u)
     return Δu
 end
 
