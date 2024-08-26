@@ -56,7 +56,20 @@ end
 # utility methods #
 # --------------- #
 FFT!(u::RPCFField) = (grid(u).plans(u.spectral_field, u.physical_field); return u)
+function FFT!(u::VectorField{N, <:RPCFField}) where {N}
+    for i in 1:N
+        FFT!(u[i])
+    end
+    return u
+end
+
 IFFT!(u::RPCFField) = (grid(u).plans(u.physical_field, u.spectral_field); return u)
+function IFFT!(u::VectorField{N, <:RPCFField}) where {N}
+    for i in 1:N
+        IFFT!(u[i])
+    end
+    return u
+end
 
 
 # ------------------ #
