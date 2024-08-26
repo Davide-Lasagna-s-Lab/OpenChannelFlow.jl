@@ -50,6 +50,27 @@ function ReSolverInterface.dot(u::RPCFField{S}, v::RPCFField{S}) where {S}
 end
 
 
+# ------------------ #
+# projection methods #
+# ------------------ #
+# TODO: test these
+channel_int(u::Vector{ComplexF64}, ws::Vector{Float64}, v::Vector{ComplexF64}) = sum(ws[i]*dot(u[i], v[i]) for i in eachindex(u))
+function project!(a::ProjectedField{F}, u::VectorField{N, F}) where {N, S, F<:RPCFField{S}}
+    a .= 0.0
+    for i in eachindex(u), nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), n in axes(a, 1)
+        a[n, nz, nt] += channel_int(@view(modes[(S[1]*(i - 1) + 1):S[1]*i, :, nz, nt]), grid(u).ws, @view(u[i][:, nz, nt]))
+    end
+    return a
+end
+
+function expand!(u::VectorField{N, F}, a::ProjectedField{F}) where {N, S, F<:RPCFField{S}}
+    for i in eachindex(u), nt in 1:S[3], nz in 1:((S[2] >> 1) + 1)
+        ReSolverInterface.mul!(@view(u[i][:, nz, nt]), @view(modes(a)[(S[1]*(i - 1) + 1):S[1]*i, :, nz, nt]), @view(a[:, nz, nt]))
+    end
+    return u
+end
+
+
 # --------------- #
 # utility methods #
 # --------------- #
