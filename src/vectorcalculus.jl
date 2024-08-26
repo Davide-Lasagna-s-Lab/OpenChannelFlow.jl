@@ -1,7 +1,5 @@
 # method definitions for vector calculus and derivative operations
 
-# TODO: rework convection methods to sacrifice the inputs to avoid the functors
-
 function ReSolverInterface.grad!(∇u::VectorField{3, RPCFField{S}}, u::RPCFField{S}) where {S}
     ∇u[1] .= 0.0
     ddy!(∇u[2], u)
@@ -27,11 +25,11 @@ struct Convection!{S, DM, DEALIAS, PAD, PLAN, IPLAN}
 end
 function (f::Convection!{S})(u∇v::VectorField{3, RPCFField{S}}, u::VectorField{3, RPCFField{S}}, v::VectorField{3, RPCFField{S}}) where {S}
     mult_add!(u∇v[1], u[2], ddy!(f.cache[1], v[1]))
-    mult_add!(u∇u[1], u[3], ddz!(v[1]))
+    mult_add!(u∇u[1], u[3], ddz!(f.cache[1], v[1]))
     mult_add!(u∇v[2], u[2], ddy!(f.cache[1], v[2]))
-    mult_add!(u∇v[2], u[3], ddz!(v[2]))
+    mult_add!(u∇v[2], u[3], ddz!(f.cache[1], v[2]))
     mult_add!(u∇v[3], u[2], ddy!(f.cache[1], v[3]))
-    mult_add!(u∇v[3], u[3], ddz!(v[3]))
+    mult_add!(u∇v[3], u[3], ddz!(f.cache[1], v[3]))
     return u∇v
 end
 
@@ -44,8 +42,8 @@ function (f::Convection2!{S})(∇uv::VectorField{3, RPCFField{S}}, u::VectorFiel
     mult_add!(∇uv[2], v[1], ddy!(f.cache[1], u[1]))
     mult_add!(∇uv[2], v[2], ddy!(f.cache[1], u[2]))
     mult_add!(∇uv[2], v[3], ddy!(f.cache[1], u[3]))
-    mult_add!(∇uv[3], v[1], ddz!(u[1]))
-    mult_add!(∇uv[3], v[2], ddz!(u[2]))
-    mult_add!(∇uv[3], v[3], ddz!(u[3]))
+    mult_add!(∇uv[3], v[1], ddz!(f.cache[1], u[1]))
+    mult_add!(∇uv[3], v[2], ddz!(f.cache[1], u[2]))
+    mult_add!(∇uv[3], v[3], ddz!(f.cache[1], u[3]))
     return ∇uv
 end

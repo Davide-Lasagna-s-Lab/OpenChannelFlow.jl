@@ -45,10 +45,6 @@
     @test dudz.physical_field ≈ dudz_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
     @test d2udz2.physical_field ≈ d2udz2_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
 
-    @test_nowarn RPCF.ddz!(u)
-    IFFT!(u)
-    @test u.physical_field ≈ dudz_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
-
     v = RPCFField(grid)
     w = RPCFField(grid)
     v.physical_field .= v_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
