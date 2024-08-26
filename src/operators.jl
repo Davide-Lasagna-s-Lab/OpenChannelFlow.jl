@@ -36,3 +36,6 @@ function (f::RPCFGradientOperator)(M_ur::VectorField{3}, u::VectorField{3}, r::V
 
     return M_ur
 end
+
+# TODO: test this
+ReSolverInterface.Objective(g::RPCFGrid, Re::Float64, Ro::Float64, modes::Array{ComplexF64, 4}, base::Vector{Float64}, free_mean::Bool=true) = ReSolverInterface.Objective(RPCFField, g, 3, Re, modes, base, free_mean, RPCFNavierStokesOperator(g, Re, Ro), RPCFGradientOperator(g, Re, Ro))
