@@ -81,7 +81,18 @@ function ddz_add!(dudz::RPCFField{S}, u::RPCFField{S}) where {S}
     return dudz
 end
 ddz!(dudz::RPCFField{S}, u::RPCFField{S}) where {S} = (dudz .= 0.0; return ddz_add!(dudz, u))
-function ddz!(u::RPCFField{S}) where {S} end
+function ddz!(u::RPCFField{S}) where {S}
+    β = grid(u).β
+
+    # loop over spanwise modes multiplying by modifier
+    @inbounds begin
+        for nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
+            u[ny, nz, nt] = 1im*(nz - 1)*β*u[ny, nz, nt]
+        end
+    end
+
+    return u
+end
 
 function d2dz2_add!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S}
     β = grid(u).β
@@ -96,7 +107,6 @@ function d2dz2_add!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S}
     return d2udz2
 end
 d2dz2!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S} = (d2udz2 .= 0.0; return d2dz2_add!(d2udz2, u))
-function d2dz2!(u::RPCFField{S}) where {S} end
 
 function ReSolverInterface.ddt!(dudt::RPCFField{S}, u::RPCFField{S}) where {S}
     ω = grid(u).ω
