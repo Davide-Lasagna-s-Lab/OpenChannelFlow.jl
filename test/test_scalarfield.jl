@@ -56,4 +56,15 @@
     vw = mult!(RPCFField(grid), v, w)
     IFFT!(vw)
     @test vw.physical_field ≈ vw_fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
+
+    M = rand(1:12)
+    Ψ = zeros(ComplexF64, 3*Ny, M, Nz, Nt)
+    for nt in 1:Nt, nz in 1:Nz
+        Ψ[:, :, nz, nt] .= @view(qr(rand(ComplexF64, 3*Ny, M)).Q[:, 1:M])
+    end
+    u1 = VectorField(RPCFField, grid)
+    u2 = RPCF.expand!(VectorField(RPCFField, grid), RPCF.project!(RPCF.ProjectedField(grid, Ψ), u1))
+    @test u1[1].spectral_field ≈ u2[1].spectral_field
+    @test u1[2].spectral_field ≈ u2[2].spectral_field
+    @test u1[3].spectral_field ≈ u2[3].spectral_field
 end

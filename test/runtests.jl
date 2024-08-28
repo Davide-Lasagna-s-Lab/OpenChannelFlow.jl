@@ -1,6 +1,6 @@
 using Test
 
-using FFTW, Random
+using FFTW, Random, LinearAlgebra
 
 using ChebUtils
 
