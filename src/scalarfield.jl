@@ -1,6 +1,6 @@
 # Implementation of the RPCF scalar field
 
-struct RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN} <: AbstractScalarField{3, Float64}
+struct RPCFField{S, DM, DEALIAS, PAD, PLAN, IPLAN} <: AbstractScalarField{3, ComplexF64}
     grid::RPCFGrid{S, DM, DEALIAS, PAD, PLAN, IPLAN}
     spectral_field::Array{ComplexF64, 3}
     physical_field::Array{Float64, 3}

@@ -20,7 +20,7 @@ function ReSolverInterface.laplacian!(Δu::RPCFField{S}, u::RPCFField{S}) where 
 end
 
 # FIXME: is there a way to not allocate an array here?
-function convection!(u∇v::VectorField{3, <:RPCFField{S}}, u::VectorField{3, <:RPCFField{S}}, v::VectorField{3, <:RPCFField{S}}) where {S}
+function ReSolverInterface.convection!(u∇v::VectorField{3, <:RPCFField{S}}, u::VectorField{3, <:RPCFField{S}}, v::VectorField{3, <:RPCFField{S}}) where {S}
     cache = RPCFField(grid(u))
     mult_add!(u∇v[1], u[2], ddy!(cache, v[1]))
     mult_add!(u∇v[1], u[3], ddz!(cache, v[1]))
@@ -31,7 +31,7 @@ function convection!(u∇v::VectorField{3, <:RPCFField{S}}, u::VectorField{3, <:
     return u∇v
 end
 
-function convection2!(∇uv::VectorField{3, <:RPCFField{S}}, u::VectorField{3, <:RPCFField{S}}, v::VectorField{3, <:RPCFField{S}}) where {S}
+function ReSolverInterface.convection2!(∇uv::VectorField{3, <:RPCFField{S}}, u::VectorField{3, <:RPCFField{S}}, v::VectorField{3, <:RPCFField{S}}) where {S}
     cache = RPCFField(grid(u))
     ∇uv[1] .= 0.0
     mult_add!(∇uv[2], v[1], ddy!(cache, u[1]))
