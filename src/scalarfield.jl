@@ -49,7 +49,7 @@ function ReSolverInterface.dot(u::RPCFField{S}, v::RPCFField{S}) where {S}
     return ((8π^2)/(grid(u).β*grid(u).ω))*prod
 end
 
-ReSolverInterface.include_base!(u::VectorField{3, <:RPCFField}, base::Vector{Float64}) = (u[1][:, 1, 1] .= base; return u)
+ReSolverInterface.include_base!(u::VectorField{3, <:RPCFField}, base::Vector{Float64}) = (u[1][:, 1, 1] .+= base; return u)
 
 
 # ------------------ #
