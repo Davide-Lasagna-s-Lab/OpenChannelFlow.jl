@@ -12,15 +12,15 @@
 
     # construct grid
     Ny = 32
-    Nz = 33
-    Nt = 51
+    Nz = 65
+    Nt = 65
     y = chebpts(Ny)
     D1 = chebdiff(Ny)
     D2 = chebddiff(Ny)
     w = chebws(Ny)
     ω = 1.0
     β = 5.8
-    grid = RPCFGrid(y, Nz, Nt, β, ω, D1, D2, w, flags=FFTW.ESTIMATE, dealias=false)
+    grid = RPCFGrid(y, Nz, Nt, β, ω, D1, D2, w, flags=FFTW.ESTIMATE, dealias=true)
     _, z, t = points(grid)
 
     u = @test_nowarn RPCFField(grid)

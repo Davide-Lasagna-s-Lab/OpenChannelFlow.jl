@@ -31,7 +31,7 @@
     w = chebws(Ny)
     ω = 1.0
     β = 5.8
-    grid = RPCFGrid(y, Nz, Nt, β, ω, D1, D2, w, flags=FFTW.ESTIMATE, dealias=false)
+    grid = RPCFGrid(y, Nz, Nt, β, ω, D1, D2, w, flags=FFTW.ESTIMATE, dealias=true)
     _, z, t = points(grid)
 
     u = VectorField(RPCFField, grid)

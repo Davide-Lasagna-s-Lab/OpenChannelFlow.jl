@@ -42,7 +42,7 @@ function (f::FFTPlans{false})(U::Array{ComplexF64}, u::Array{Float64})
 end
 
 function (f::FFTPlans{true})(u::Array{Float64}, U::Array{ComplexF64})
-    copy_to_padded!(f.spectral_cache, U)
+    copy_to_padded!(apply_mask!(f.spectral_cache), U)
     FFTW.unsafe_execute!(f.iplan, f.spectral_cache, u)
     return u
 end
