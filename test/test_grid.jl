@@ -1,8 +1,12 @@
 @testset "Field Grid                            " begin
     # generate random inputs
-    Ny = rand(3:50)
-    Nz = rand(3:50)
-    Nt = rand(3:50)
+    # Ny = rand(3:50)
+    # Nz = rand(3:50)
+    # Nt = rand(3:50)
+    Ny = 10
+    Nz = 10
+    Nt = 10
+    Nz_pad, Nt_pad = RPCF.padded_size(Nz, Nt, 3/2)
     randD = rand([-2, -1, 1, 2])
     y = rand(Float64, Ny)
     D1 = rand(Float32, (Ny, Ny))
@@ -15,10 +19,14 @@
 
     # test point generation
     g1 = RPCFGrid(y, Nz, Nt, β, ω, D1, D_sec, w1, dealias=false, flags=FFTW.ESTIMATE)
+    g1_d = RPCFGrid(y, Nz, Nt, β, ω, D1, D_sec, w1, dealias=true, flags=FFTW.ESTIMATE)
     gpoints = points(g1)
-    @test gpoints[1] == y
+    gpoints_d = points(g1_d)
+    @test gpoints[1] == gpoints_d[1] == y
     @test gpoints[2] ≈ range(0, 2π*(1 - 1/Nz), length = Nz)/β # precision differences in operations
+    @test gpoints_d[2] ≈ range(0, 2π*(1 - 1/Nz_pad), length = Nz_pad)/β
     @test gpoints[3] ≈ range(0, 2π*(1 - 1/Nt), length = Nt)/ω # mean they aren't exactly equal
+    @test gpoints_d[3] ≈ range(0, 2π*(1 - 1/Nt_pad), length = Nt_pad)/ω
 
     # test size of grid
     @test size(g1) == (Ny, Nz, Nt)

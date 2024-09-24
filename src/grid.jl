@@ -34,5 +34,6 @@ end
 Base.size(::RPCFGrid{S}) where {S} = S
 
 # interface methods
-ReSolverInterface.points(g::RPCFGrid{S}) where {S} = (g.y, ntuple(i -> (0:(S[i + 1] - 1))/(S[i + 1])*(2π/g.domain[i]), 2)...)
+ReSolverInterface.points(g::RPCFGrid{S, DM, false}) where {S, DM} = (g.y, ntuple(i -> (0:(S[i + 1] - 1))/(S[i + 1])*(2π/g.domain[i]), 2)...)
+ReSolverInterface.points(g::RPCFGrid{S, DM, true, PAD}) where {S, DM, PAD} = (S_pad = padded_size(S[2], S[3], PAD); return (g.y, ntuple(i -> (0:(S_pad[i] - 1))/(S_pad[i])*(2π/g.domain[i]), 2)...))
 ReSolverInterface.volume(g::RPCFGrid) = 2*g.L*g.T
