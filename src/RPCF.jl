@@ -7,6 +7,7 @@ using ReSolverInterface
 export RPCFGrid, points, volume
 export RPCFField, FFT!, IFFT!, dot, norm, mult!
 export VectorField, grad!, divergence!, laplacian!, convection!, convection2!
+export ProjectedField, expand!, project!
 export Objective
 
 include("fft.jl")

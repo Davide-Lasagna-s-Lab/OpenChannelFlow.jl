@@ -5,7 +5,7 @@ struct RPCFNavierStokesOperator{NSO}
     Ro::Float64
 
     function RPCFNavierStokesOperator(g::RPCFGrid, Re, Ro)
-        nso = NavierStokesOperator(RPCFField, g, 3, Re)
+        nso = NavierStokesOperator(g, Re)
         new{typeof(nso)}(nso, Float64.(Ro))
     end
 end
@@ -27,7 +27,7 @@ struct RPCFGradientOperator{GRAD}
     Ro::Float64
 
     function RPCFGradientOperator(g::RPCFGrid, Re, Ro)
-        grad = GradientOperator(RPCFField, g, 3, Re)
+        grad = GradientOperator(g, Re)
         new{typeof(grad)}(grad, Float64.(Ro))
     end
 end
@@ -43,4 +43,4 @@ function (f::RPCFGradientOperator)(M_ur::VectorField{3}, u::VectorField{3}, r::V
     return M_ur
 end
 
-Objective(g::RPCFGrid, Re::Real, Ro::Real, modes::Array{ComplexF64, 4}, base::Vector{Float64}, free_mean::Bool=true) = ReSolverInterface.Objective(RPCFField, g, 3, Re, modes, base, free_mean, RPCFNavierStokesOperator(g, Re, Ro), RPCFGradientOperator(g, Re, Ro))
+Objective(g::RPCFGrid, Re::Real, Ro::Real, modes::Array{ComplexF64, 4}, base::Vector{Float64}) = ReSolverInterface.Objective(g, Re, modes, base, RPCFNavierStokesOperator(g, Re, Ro), RPCFGradientOperator(g, Re, Ro))
