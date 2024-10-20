@@ -17,4 +17,4 @@ function data2ScalarField(data, grid::RPCFGrid{S}) where {S}
     end
     return u
 end
-data2Coefficients(data, grid::RPCFGrid, modes) = expand!(ReSolverInterface.ProjectedField(grid, modes), data2SpectralField(data, grid))
+data2Coefficients(data, grid::RPCFGrid, modes) = project!(ProjectedField(grid, modes), data2ScalarField(data, grid))
