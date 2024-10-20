@@ -14,5 +14,6 @@ include("grid.jl")
 include("scalarfield.jl")
 include("vectorcalculus.jl")
 include("operators.jl")
+include("dns2field.jl")
 
 end
