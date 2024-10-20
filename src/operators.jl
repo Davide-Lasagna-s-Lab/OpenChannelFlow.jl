@@ -15,8 +15,8 @@ function (f::RPCFNavierStokesOperator)(N_u::VectorField{3}, u::VectorField{3})
     f.NSOper(N_u, u)
 
     # compute cross product term
-    @. N_u[1] -= f.Ro*u[2]
-    @. N_u[2] += f.Ro*u[1]
+    @. N_u[1] += f.Ro*u[2]
+    @. N_u[2] -= f.Ro*u[1]
 
     return N_u
 end
@@ -37,8 +37,8 @@ function (f::RPCFGradientOperator)(M_ur::VectorField{3}, u::VectorField{3}, r::V
     f.GradOper(M_ur, u, r)
 
     # compute cross product terms
-    @. M_ur[1] += f.Ro*u[2]
-    @. M_ur[2] -= f.Ro*u[1]
+    @. M_ur[1] += f.Ro*r[2]
+    @. M_ur[2] -= f.Ro*r[1]
 
     return M_ur
 end

@@ -1,5 +1,6 @@
 # Implementation of the RPCF grid
 
+# TODO: add method to associate grid with particular scalar field
 struct RPCFGrid{S, DM<:AbstractMatrix, DEALIAS, PAD, PLAN, IPLAN} <: AbstractGrid{Float64, 3}
     y::Vector{Float64}
     Nz::Int

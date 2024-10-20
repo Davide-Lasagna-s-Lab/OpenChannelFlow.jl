@@ -18,7 +18,7 @@ end
 # ----------------- #
 ReSolverInterface.grid(u::RPCFField) = u.grid
 ReSolverInterface.parent(u::RPCFField) = u.spectral_field
-ReSolverInterface.similar(u::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS} = RPCFField(grid(u), dealias=DEALIAS)
+ReSolverInterface.similar(u::RPCFField{S, DM, DEALIAS}, ::Type{T}) where {S, DM, DEALIAS, T} = RPCFField(grid(u))
 
 function mult_add!(uv::RPCFField{S, DM, DEALIAS}, u::RPCFField{S, DM, DEALIAS}, v::RPCFField{S, DM, DEALIAS}) where {S, DM, DEALIAS}
     IFFT!(u); IFFT!(v); IFFT!(uv)
