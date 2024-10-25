@@ -33,23 +33,47 @@ function ReSolverInterface.dot(u::RPCFField{S}, v::RPCFField{S}) where {S}
 
     # loop over top half plane exclusive of mean spanwise mode
     for nt in 1:S[3], nz in 2:((S[2] >> 1) + 1), ny in 1:S[1]
-        prod += grid(u).ws[ny]*real(dot(u[ny, nz, nt], v[ny, nz, nt]))
+        @inbounds prod += grid(u).ws[ny]*real(dot(u[ny, nz, nt], v[ny, nz, nt]))
     end
 
     # loop over positive temporal modes for mean spanwise mode
     for nt in 2:((S[3] >> 1) + 1), ny in 1:S[1]
-        prod += grid(u).ws[ny]*real(dot(u[ny, 1, nt], v[ny, 1, nt]))
+        @inbounds prod += grid(u).ws[ny]*real(dot(u[ny, 1, nt], v[ny, 1, nt]))
     end
 
     # evaluate mean component contribution
     for ny in 1:S[1]
-        prod += 0.5*grid(u).ws[ny]*real(dot(u[ny, 1, 1], v[ny, 1, 1]))
+        @inbounds prod += 0.5*grid(u).ws[ny]*real(dot(u[ny, 1, 1], v[ny, 1, 1]))
     end
 
     return ((8π^2)/(grid(u).β*grid(u).ω))*prod
 end
 
 ReSolverInterface.include_base!(u::VectorField{3, <:RPCFField}, base::Vector{Float64}) = (u[1][:, 1, 1] .+= base; return u)
+
+
+# ------------ #
+# norm scaling #
+# ------------ #
+struct FarazmandScaling <: NormScaling
+    ω::Float64
+    β::Float64
+end
+Base.getindex(A::FarazmandScaling, ::Int, nz::Int, nt::Int) = 1/(1 + (A.β*(nz - 1))^2 + (A.ω*(nt - 1))^2)
+# TODO: check this doesn't allocate any memory
+function ReSolverInterface.mul!(v::RPCFField{S}, A::FarazmandScaling, u::RPCFField{S}) where {S}
+    for nt in 1:S[3], nz in 2:((S[2] >> 1) + 1), ny in 1:S[1]
+        @inbounds v[ny, nz, nt] = A[ny, nz, nt]*u[ny, nz, nt]
+    end
+    for nt in 2:((S[3] >> 1) + 1), ny in 1:S[1]
+        @inbounds v[ny, 1, nt]       = A[ny, 1, nt]*u[ny, 1, nt]
+        @inbounds v[ny, 1, end-nt+2] = A[ny, 1, nt]*u[ny, 1, end-nt+2]
+    end
+    for ny in 1:S[1]
+        @inbounds v[ny, 1, 1] = A[ny, 1, 1]*u[ny, 1, 1]
+    end
+    return v
+end
 
 
 # ------------------ #
@@ -60,14 +84,15 @@ channel_int(u::AbstractVector, ws::AbstractVector, v::AbstractVector) = sum(ws[i
 function ReSolverInterface.project!(a::ProjectedField{G, 3}, u::VectorField{D, F}) where {D, S, F<:RPCFField{S}, G}
     a .= 0.0
     for i in eachindex(u), nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), n in axes(a, 1)
-        a[n, nz, nt] += channel_int(@view(ReSolverInterface.modes(a)[(S[1]*(i - 1) + 1):S[1]*i, n, nz, nt]), grid(u).ws, @view(u[i][:, nz, nt]))
+        @inbounds a[n, nz, nt] += channel_int(@view(ReSolverInterface.modes(a)[(S[1]*(i - 1) + 1):S[1]*i, n, nz, nt]), grid(u).ws, @view(u[i][:, nz, nt]))
     end
     return a
 end
 
+# TODO: optimise this in line with Fields.jl
 function ReSolverInterface.expand!(u::VectorField{D, F}, a::ProjectedField{G, 3}) where {D, S, F<:RPCFField{S}, G}
     for i in eachindex(u), nt in 1:S[3], nz in 1:((S[2] >> 1) + 1)
-        ReSolverInterface.mul!(@view(u[i][:, nz, nt]), @view(ReSolverInterface.modes(a)[(S[1]*(i - 1) + 1):S[1]*i, :, nz, nt]), @view(a[:, nz, nt]))
+        @inbounds ReSolverInterface.mul!(@view(u[i][:, nz, nt]), @view(ReSolverInterface.modes(a)[(S[1]*(i - 1) + 1):S[1]*i, :, nz, nt]), @view(a[:, nz, nt]))
     end
     return u
 end
@@ -103,10 +128,8 @@ function ddz_add!(dudz::RPCFField{S}, u::RPCFField{S}) where {S}
     β = grid(u).β
 
     # loop over spanwise modes multiplying by modifier
-    @inbounds begin
-        for nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
-            dudz[ny, nz, nt] += 1im*(nz - 1)*β*u[ny, nz, nt]
-        end
+    for nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
+        @inbounds dudz[ny, nz, nt] += 1im*(nz - 1)*β*u[ny, nz, nt]
     end
 
     return dudz
@@ -117,10 +140,8 @@ function d2dz2_add!(d2udz2::RPCFField{S}, u::RPCFField{S}) where {S}
     β = grid(u).β
 
     # loop over spanwise modes multiplying by modifier
-    @inbounds begin
-        for nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
-            d2udz2[ny, nz, nt] += -(((nz - 1)*β)^2)*u[ny, nz, nt]
-        end
+    for nt in 1:S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
+        @inbounds d2udz2[ny, nz, nt] += -(((nz - 1)*β)^2)*u[ny, nz, nt]
     end
 
     return d2udz2
@@ -131,18 +152,14 @@ function ReSolverInterface.ddt!(dudt::RPCFField{S}, u::RPCFField{S}) where {S}
     ω = grid(u).ω
 
     # loop over positive temporal modes multiplying by modifier
-    @inbounds begin
-        for nt in 1:((S[3] >> 1) + 1), nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
-            dudt[ny, nz, nt] = 1im*(nt - 1)*ω*u[ny, nz, nt]
-        end
+    for nt in 1:((S[3] >> 1) + 1), nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
+        @inbounds dudt[ny, nz, nt] = 1im*(nt - 1)*ω*u[ny, nz, nt]
     end
 
     # loop over negative temporal modes multiplying by modifier
     if S[3] > 1
-        @inbounds begin
-            for nt in ((S[3] >> 1) + 2):S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
-                dudt[ny, nz, nt] = 1im*(nt - 1 - S[3])*ω*u[ny, nz, nt]
-            end
+        for nt in ((S[3] >> 1) + 2):S[3], nz in 1:((S[2] >> 1) + 1), ny in 1:S[1]
+            @inbounds dudt[ny, nz, nt] = 1im*(nt - 1 - S[3])*ω*u[ny, nz, nt]
         end
     end
 

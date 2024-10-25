@@ -39,3 +39,5 @@ ReSolverInterface.points(g::RPCFGrid{S, DM, true, PAD}) where {S, DM, PAD} = (S_
 ReSolverInterface.volume(g::RPCFGrid) = 2*g.L*g.T
 ReSolverInterface.fieldType(::Type{<:RPCFGrid}) = RPCFField
 ReSolverInterface.numVelComps(::Type{<:RPCFGrid}) = 3
+ReSolverInterface.frequency(g::RPCFGrid) = g.ω
+ReSolverInterface.setFrequency!(g::RPCFGrid, ω::Float64) = (g.domain[2] = ω; return ω)

@@ -43,4 +43,4 @@ function (f::RPCFGradientOperator)(M_ur::VectorField{3}, u::VectorField{3}, r::V
     return M_ur
 end
 
-Objective(g::RPCFGrid, Re::Real, Ro::Real, modes::Array{ComplexF64, 4}, base::Vector{Float64}) = ReSolverInterface.Objective(g, Re, modes, base, RPCFNavierStokesOperator(g, Re, Ro), RPCFGradientOperator(g, Re, Ro))
+Objective(g::RPCFGrid, Re::Real, Ro::Real, modes::Array{ComplexF64, 4}, base::Vector{Float64}) = ReSolverInterface.Objective(g, Re, modes, base, navierStokesOperator=RPCFNavierStokesOperator(g, Re, Ro), gradientOperator=RPCFGradientOperator(g, Re, Ro), norm_scaling=FarazmandScaling(g.ω, g.β))

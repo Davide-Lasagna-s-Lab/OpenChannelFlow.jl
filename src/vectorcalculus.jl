@@ -1,5 +1,7 @@
 # method definitions for vector calculus and derivative operations
 
+# TODO: optimise these
+
 function ReSolverInterface.grad!(∇u::VectorField{3, <:RPCFField{S}}, u::RPCFField{S}) where {S}
     ∇u[1] .= 0.0
     ddy!(∇u[2], u)
