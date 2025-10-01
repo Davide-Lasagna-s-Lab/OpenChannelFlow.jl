@@ -1,5 +1,8 @@
 # Fourier transforms for the scalar field
 
+# ---------------- #
+# transform struct #
+# ---------------- #
 struct FFTPlans{DEALIAS, PLAN, IPLAN}
     plan::PLAN
     iplan::IPLAN
@@ -24,6 +27,7 @@ struct FFTPlans{DEALIAS, PLAN, IPLAN}
     end
 end
 get_plan_types(::FFTPlans{DEALIAS, PLAN, IPLAN}) where {DEALIAS, PLAN, IPLAN} = (PLAN, IPLAN)
+
 
 # ---------------------- #
 # transformation methods #
@@ -54,6 +58,9 @@ function (f::FFTPlans{false})(u::Array{Float64}, U::Array{ComplexF64})
 end
 
 
+# --------------- #
+# utility methods #
+# --------------- #
 function padded_size(Nz, Nt, factor)
     Nz_pad = ceil(Int, Nz*factor)
     Nt_pad = ceil(Int, Nt*factor)
@@ -62,9 +69,6 @@ function padded_size(Nz, Nt, factor)
     return Nz_pad, Nt_pad
 end
 
-# --------------- #
-# utility methods #
-# --------------- #
 function copy_to_padded!(upad::Array{ComplexF64}, u::Array{ComplexF64})
     Nz, Nt = size(u)[2:3]
     Nt_pad = size(upad, 3)
