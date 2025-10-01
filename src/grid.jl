@@ -1,43 +1,24 @@
 # Implementation of the RPCF grid
 
-struct RPCFGrid{S, DM<:AbstractMatrix, DEALIAS, PAD, PLAN, IPLAN} <: AbstractGrid{Float64, 3}
+struct ChannelGrid{S, D1<:AbstractMatrix, D2<:AbstractMatrix, PLANS}
     y::Vector{Float64}
-    Nz::Int
-    Nt::Int
-    domain::Vector{Float64}
-    Dy::DM
-    Dy2::DM
+    Dy::D1
+    Dy2::D2
     ws::Vector{Float64}
-    plans::FFTPlans{DEALIAS, PLAN, IPLAN}
+    β::Float64
+    plans::PLANS
 
-    function RPCFGrid(y, Nz, Nt, β, ω, Dy::DM, Dy2::DM, ws; dealias::Bool=true, pad::Float64=3/2, flags::UInt32=FFTW.EXHAUSTIVE, timelimit::Real=FFTW.NO_TIMELIMIT) where {DM}
+    function ChannelGrid(y, Nz, Nt, β,
+                         Dy::D1, Dy2::D2, ws;
+                         dealias::Bool=true,
+                         pad::Float64=3/2,
+                         flags::UInt32=FFTW.EXHAUSTIVE,
+                         timelimit::Real=FFTW.NO_TIMELIMIT) where {D1, D2}
         plans = FFTPlans(length(y), Nz, Nt, dealias=dealias, pad=pad, flags=flags, timelimit=timelimit)
-        new{(length(y), Nz, Nt), DM, dealias, pad, get_plan_types(plans)...}(y, Nz, Nt, [β, ω], Dy, Dy2, ws, plans)
+        new{(length(y), Nz, Nt), D1, D2, typeof(plans)}(y, Dy, Dy2, ws, β, plans)
     end
 end
 
-# getter-setter methods
-function Base.getproperty(g::RPCFGrid, name::Symbol)
-    if name === :L
-        return 2π/g.domain[1]
-    elseif name === :β
-        return g.domain[1]
-    elseif name === :T
-        return 2π/g.domain[2]
-    elseif name === :ω
-        return g.domain[2]
-    else
-        return getfield(g, name)
-    end
-end
-
-Base.size(::RPCFGrid{S}) where {S} = S
-
-# interface methods
-ReSolverInterface.points(g::RPCFGrid{S, DM, false}) where {S, DM} = (g.y, ntuple(i -> (0:(S[i + 1] - 1))/(S[i + 1])*(2π/g.domain[i]), 2)...)
-ReSolverInterface.points(g::RPCFGrid{S, DM, true, PAD}) where {S, DM, PAD} = (S_pad = padded_size(S[2], S[3], PAD); return (g.y, ntuple(i -> (0:(S_pad[i] - 1))/(S_pad[i])*(2π/g.domain[i]), 2)...))
-ReSolverInterface.volume(g::RPCFGrid) = 2*g.L*g.T
-ReSolverInterface.fieldType(::Type{<:RPCFGrid}) = RPCFField
-ReSolverInterface.numVelComps(::Type{<:RPCFGrid}) = 3
-ReSolverInterface.frequency(g::RPCFGrid) = g.ω
-ReSolverInterface.setFrequency!(g::RPCFGrid, ω::Float64) = (g.domain[2] = ω; return ω)
+# get points from grid
+points(g::ChannelGrid{S}, T) where {S} = (g.y, (0:(S[2] - 1))/(S[2])*(2π/g.β), (0:(S[3] - 1))/(S[3])*T)
+points(g::ChannelGrid, T, Nz, Nt)      = (g.y, (0:(Nz   - 1))/(Nz)*(2π/g.β),   (0:(Nt   - 1))/(Nt)*T)
