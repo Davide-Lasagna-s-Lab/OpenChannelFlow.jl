@@ -3,7 +3,8 @@ module OpenChannelFlow
 using FFTW
 
 export ChannelGrid, points
-# export RPCFField, FFT!, IFFT!, dot, norm, mult!
+export ModeNumber
+export SCField, grid
 # export VectorField, grad!, divergence!, laplacian!, convection!, convection2!
 # export ProjectedField, expand!, project!
 # export Objective

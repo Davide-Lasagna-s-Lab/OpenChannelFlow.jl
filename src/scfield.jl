@@ -3,12 +3,12 @@
 # -------------- #
 # spectral field #
 # -------------- #
-struct SCField{G<:ChannelGrid, T} <: AbstractArray{ComplexF64, 3}
+struct SCField{G<:ChannelGrid, T} <: AbstractArray{Complex{T}, 3}
     grid::G
     data::Array{Complex{T}, 3}
 
     function SCField(g::G, data::Array{Complex{T}, 3}) where {G, T}
-        _apply_symmetry!(data)
+        data[:, 1, 1] .= real.(data[:, 1, 1])
         new{G, T}(g, data)
     end
 end
@@ -57,34 +57,20 @@ end
 
 # mode number idexing
 Base.@propagate_inbounds function Base.getindex(u::SCField{G}, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
-    _nz, _nt = _convert_modenumber(n, S[3])
+    _nz, _nt, do_conj = _convert_modenumber(n, S[3])
     @boundscheck checkbounds(u, ny, _nz, _nt)
-    @inbounds val = u[ny, _nz, _nt]
+    @inbounds val = do_conj ? conj(u[ny, _nz, _nt]) : u[ny, _nz, _nt]
     return val
 end
 Base.@propagate_inbounds function Base.setindex!(u::SCField{G}, val, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
-    _nz, _nt = _convert_modenumber(n, S[3])
+    _nz, _nt, do_conj = _convert_modenumber(n, S[3])
     @boundscheck checkbounds(u, ny, _nz, _nt)
-    @inbounds u[ny, _nz, _nt] = val
+    @inbounds u[ny, _nz, _nt] = do_conj ? conj(val) : val
     return val
 end
 
 
-# ------------- #
-# utility stuff #
-# ------------- #
+# --------------- #
+# utility methods #
+# --------------- #
 grid(u::SCField) = u.grid
-
-
-# TODO: modify these to work on channel field types
-# TODO: add IFFT method for field type which works with points provided by grid
-
-# function FFT!(u::SCField)
-#     grid(u).plans(u.spectral_field, u.physical_field)
-#     return u
-# end
-
-# function IFFT!(u::SCField)
-#     grid(u).plans(u.physical_field, u.spectral_field)
-#     return u
-# end
