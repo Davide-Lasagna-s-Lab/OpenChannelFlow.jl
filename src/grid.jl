@@ -1,5 +1,7 @@
 # Implementation of the RPCF grid
 
+# TODO: generalise to include potential spatial independencies
+
 struct ChannelGrid{S, D1<:AbstractMatrix, D2<:AbstractMatrix, PLANS}
     y::Vector{Float64}
     Dy::D1

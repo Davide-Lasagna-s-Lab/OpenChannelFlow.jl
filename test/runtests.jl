@@ -8,5 +8,7 @@ using OpenChannelFlow
 
 include("test_fft.jl")
 include("test_grid.jl")
-# include("test_scalarfield.jl")
+include("test_modenumber.jl")
+# include("test_scfield.jl")
+# include("test_pcfield.jl")
 # include("test_vectorcalculus.jl")

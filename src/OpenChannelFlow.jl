@@ -10,9 +10,13 @@ export ChannelGrid, points
 
 include("fft.jl")
 include("grid.jl")
-# include("scalarfield.jl")
+include("modenumber.jl")
+include("scfield.jl")
+include("pcfield.jl")
 # include("vectorcalculus.jl")
 # include("operators.jl")
 # include("dns2field.jl")
+
+# TODO: try to make this compatible with the flows interface as well as the ReSolver one?
 
 end

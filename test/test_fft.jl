@@ -1,4 +1,4 @@
-@testset "FFT Transforms                        " begin
+@testset "FFT transforms                        " begin
     # randon signal
     Ny = 16; Nz = 33; Nt = 11
     Â = OpenChannelFlow.apply_symmetry!(rand(ComplexF64, Ny, (Nz >> 1) + 1, Nt))

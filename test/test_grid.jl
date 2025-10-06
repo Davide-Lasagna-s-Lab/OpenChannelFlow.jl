@@ -1,4 +1,4 @@
-@testset "Field Grid                            " begin
+@testset "Field grid                            " begin
     # generate random inputs
     Ny    = rand(3:50)
     Nz    = rand(3:50)
