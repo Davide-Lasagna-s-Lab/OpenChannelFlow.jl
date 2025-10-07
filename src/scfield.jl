@@ -43,19 +43,6 @@ Base.@propagate_inbounds function Base.setindex!(u::SCField, val, i::Int)
     return val
 end
 
-# array indexing
-# TODO: check if this method is actually necessary
-Base.@propagate_inbounds function Base.getindex(u::SCField, ny::Int, nz::Int, nt::Int)
-    @boundscheck checkbounds(parent(u), ny, nz, nt)
-    @inbounds val = parent(u)[ny, nz, nt]
-    return val
-end
-Base.@propagate_inbounds function Base.setindex!(u::SCField, val, ny::Int, nz::Int, nt::Int)
-    @boundscheck checkbounds(parent(u), ny, nz, nt)
-    @inbounds parent(u)[ny, nz, nt] = val
-    return val
-end
-
 # mode number idexing
 Base.@propagate_inbounds function Base.getindex(u::SCField{G}, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
     _nz, _nt, do_conj = _convert_modenumber(n, S[3])
