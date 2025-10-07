@@ -1,6 +1,6 @@
 @testset "Spectral channel field                " begin
     # construct grid
-    Ny = 32; Nz = 65; Nt = 65
+    Ny = 16; Nz = 33; Nt = 33
     g = ChannelGrid(chebpts(Ny),
                     Nz, Nt,
                     5.8,
@@ -39,14 +39,22 @@
         @test u[ny, ModeNumber(0,  nt)] ==      A[ny, 1, nt+1]
         @test u[ny, ModeNumber(0, -nt)] == conj(A[ny, 1, nt+1])
     end
-    for ny in 1:Ny, nz in 1:32
+    for ny in 1:Ny, nz in 1:(Nz >> 1)
         @test u[ny, ModeNumber( nz,  0)] ==      A[ny, nz+1, 1]
         @test u[ny, ModeNumber(-nz,  0)] == conj(A[ny, nz+1, 1])
     end
-    for ny in 1:Ny, nz in 1:32, nt in 1:32
+    for ny in 1:Ny, nz in 1:(Nz >> 1), nt in 1:(Nt >> 1)
         @test u[ny, ModeNumber( nz,  nt)] ==      A[ny, nz+1,    nt+1]
         @test u[ny, ModeNumber( nz, -nt)] ==      A[ny, nz+1, Nt-nt+1]
         @test u[ny, ModeNumber(-nz,  nt)] == conj(A[ny, nz+1, Nt-nt+1])
         @test u[ny, ModeNumber(-nz, -nt)] == conj(A[ny, nz+1,    nt+1])
     end
+
+    # test growto!
+    u_new = growto!(u, (65, 49))
+    @test size(u_new) == (Ny, (65 >> 1) + 1, 49)
+    @test u_new[:, 1:(Nz >> 1) + 1, 1:(Nt >> 1) + 1] == u[:, 1:(Nz >> 1) + 1, 1:(Nt >> 1) + 1]
+    @test u_new[:, 1:(Nz >> 1) + 1, end - (Nt >> 1) + 1:end] == u[:, 1:(Nz >> 1) + 1, (Nt >> 1) + 2:Nt]
+    @test all(u_new[:, 1:(Nz >> 1) + 1, (Nt >> 1) + 2:end - (Nt >> 1) - 1] .== 0)
+    @test all(u_new[:, (Nz >> 1) + 2:end, :] .== 0)
 end

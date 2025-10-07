@@ -36,13 +36,13 @@ get_array_sizes(::FFTPlans{DEALIAS, Nz, Nt}) where {DEALIAS, Nz, Nt} = Nz, Nt
 function (f::FFTPlans{true})(U::Array{ComplexF64}, u::Array{Float64})
     FFTW.unsafe_execute!(f.plan, u, f.spectral_cache)
     copy_from_padded!(U, f.spectral_cache)
-    U .*= 1/(prod(size(u)[2:3]))
+    U .*= 1/prod(size(u)[2:3])
     return U
 end
 
 function (f::FFTPlans{false})(U::Array{ComplexF64}, u::Array{Float64})
     FFTW.unsafe_execute!(f.plan, u, f.spectral_cache)
-    U .= f.spectral_cache./(prod(size(u)[2:3]))
+    U .= f.spectral_cache./prod(size(u)[2:3])
     return U
 end
 

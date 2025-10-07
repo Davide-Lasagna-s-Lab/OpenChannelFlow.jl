@@ -44,6 +44,7 @@ Base.@propagate_inbounds function Base.setindex!(u::SCField, val, i::Int)
 end
 
 # array indexing
+# TODO: check if this method is actually necessary
 Base.@propagate_inbounds function Base.getindex(u::SCField, ny::Int, nz::Int, nt::Int)
     @boundscheck checkbounds(parent(u), ny, nz, nt)
     @inbounds val = parent(u)[ny, nz, nt]
@@ -74,3 +75,16 @@ end
 # utility methods #
 # --------------- #
 grid(u::SCField) = u.grid
+
+function growto!(u::SCField{G, T}, N::NTuple{2, Int}) where {S, G<:ChannelGrid{S}, T}
+    out = SCField(growto!(grid(u), N), T)
+    for ny in 1:S[1], nz in 0:(S[2] >> 1), nt in -(S[3] >> 1):(S[3] >> 1)
+        out[ny, ModeNumber(nz, nt)] = u[ny, ModeNumber(nz, nt)]
+    end
+    # need extra loop to assign conjugate symmetric portion of array
+    # ! modify mode number indexing and asignment to not implicitely deal with symmetric portion of array
+    for ny in 1:S[1], nt in 1:(S[3] >> 1)
+        out[ny, 1, end - nt + 1] = u[ny, 1, end - nt + 1]
+    end
+    return out
+end

@@ -19,7 +19,18 @@
         Nz_pts, Nt_pts = OpenChannelFlow.get_array_sizes(g.plans)
         pts = points(g, T, dealias)
         @test pts[1] == y
-        @test pts[2]  ≈ range(0, 2π*(1 - 1/Nz_pts), length = Nz_pts)/β # precision differences in operations
-        @test pts[3]  ≈ range(0,    (1 - 1/Nt_pts), length = Nt_pts)*T # mean they aren't exactly equal
+        @test pts[2]  ≈ range(0, 2π*(1 - 1/Nz_pts), length=Nz_pts)/β # precision differences in operations
+        @test pts[3]  ≈ range(0,    (1 - 1/Nt_pts), length=Nt_pts)*T # mean they aren't exactly equal
     end
+
+    # test growto!
+    g = ChannelGrid(y, Nz, Nt, β, D1, D_sec, w1, flags=FFTW.ESTIMATE)
+    Nz_new = rand(Nt+1:80)
+    Nt_new = rand(Nt+1:80)
+    g_new = growto!(g, (Nz_new, Nt_new))
+    pts = points(g, 1.0)
+    pts_new = points(g_new, 1.0)
+    @test pts_new[1] == pts[1]
+    @test pts_new[2]  ≈ range(0, 2π*(1 - 1/Nz_new), length=Nz_new)/β # precision differences in operations
+    @test pts_new[3]  ≈ range(0,    (1 - 1/Nt_new), length=Nt_new)   # mean they aren't exactly equal
 end
