@@ -22,5 +22,5 @@ struct ChannelGrid{S, D1<:AbstractMatrix, D2<:AbstractMatrix, PLANS}
 end
 
 # get points from grid
-points(g::ChannelGrid{S}, T) where {S} = (g.y, (0:(S[2] - 1))/(S[2])*(2π/g.β), (0:(S[3] - 1))/(S[3])*T)
-points(g::ChannelGrid, T, Nz, Nt)      = (g.y, (0:(Nz   - 1))/(Nz)*(2π/g.β),   (0:(Nt   - 1))/(Nt)*T)
+points(g::ChannelGrid{S}, T, dealias::Bool=false) where {S} = dealias ? points(g, T, get_array_sizes(g.plans)) : points(g, T, (S[2], S[3]))
+points(g::ChannelGrid, T, S::NTuple{2, Int}) = (g.y, (0:(S[1] - 1))/(S[1])*(2π/g.β), (0:(S[2] - 1))/(S[2])*T)

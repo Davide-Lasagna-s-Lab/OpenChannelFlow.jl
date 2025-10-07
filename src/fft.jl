@@ -3,7 +3,7 @@
 # ---------------- #
 # transform struct #
 # ---------------- #
-struct FFTPlans{DEALIAS, PLAN, IPLAN}
+struct FFTPlans{DEALIAS, Nz, Nt, PLAN, IPLAN}
     plan::PLAN
     iplan::IPLAN
     spectral_cache::Array{ComplexF64, 3}
@@ -23,10 +23,11 @@ struct FFTPlans{DEALIAS, PLAN, IPLAN}
         plan = FFTW.plan_rfft(physical_array, [2, 3], flags=flags, timelimit=timelimit)
         iplan = dealias ? FFTW.plan_brfft(spectral_array, Nz_pad, [2, 3], flags=flags, timelimit=timelimit) : FFTW.plan_brfft(spectral_array, Nz, [2, 3], flags=flags, timelimit=timelimit)
 
-        new{dealias, typeof(plan), typeof(iplan)}(plan, iplan, spectral_array)
+        new{dealias, size(physical_array)[2:3]..., typeof(plan), typeof(iplan)}(plan, iplan, spectral_array)
     end
 end
-get_plan_types(::FFTPlans{DEALIAS, PLAN, IPLAN}) where {DEALIAS, PLAN, IPLAN} = (PLAN, IPLAN)
+get_plan_types(::FFTPlans{DEALIAS, Nz, Nt, PLAN, IPLAN}) where {DEALIAS, Nz, Nt, PLAN, IPLAN} = (PLAN, IPLAN)
+get_array_sizes(::FFTPlans{DEALIAS, Nz, Nt}) where {DEALIAS, Nz, Nt} = Nz, Nt
 
 
 # ---------------------- #

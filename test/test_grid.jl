@@ -15,9 +15,11 @@
 
     # test point generation
     for dealias in [false, true]
-        pts = points(ChannelGrid(y, Nz, Nt, β, D1, D_sec, w1, dealias=dealias, flags=FFTW.ESTIMATE), T)
+        g = ChannelGrid(y, Nz, Nt, β, D1, D_sec, w1, dealias=dealias, flags=FFTW.ESTIMATE)
+        Nz_pts, Nt_pts = OpenChannelFlow.get_array_sizes(g.plans)
+        pts = points(g, T, dealias)
         @test pts[1] == y
-        @test pts[2] ≈  range(0, 2π*(1 - 1/Nz), length = Nz)/β # precision differences in operations
-        @test pts[3] ≈  range(0,    (1 - 1/Nt), length = Nt)*T # mean they aren't exactly equal
+        @test pts[2]  ≈ range(0, 2π*(1 - 1/Nz_pts), length = Nz_pts)/β # precision differences in operations
+        @test pts[3]  ≈ range(0,    (1 - 1/Nt_pts), length = Nt_pts)*T # mean they aren't exactly equal
     end
 end
