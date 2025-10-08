@@ -35,9 +35,12 @@
     end
 
     # test mode number indexing
-    for ny in 1:Ny, nt in 0:(Nz >> 1)
-        @test u[ny, ModeNumber(0,  nt)] ==      A[ny, 1, nt+1]
-        @test u[ny, ModeNumber(0, -nt)] == conj(A[ny, 1, nt+1])
+    for ny in 1:Ny
+        @test u[ny, ModeNumber(0, 0)] == A[ny, 1, 1]
+    end
+    for ny in 1:Ny, nt in 1:(Nz >> 1)
+        @test u[ny, ModeNumber(0,  nt)] == A[ny, 1, nt+1]
+        @test u[ny, ModeNumber(0, -nt)] == A[ny, 1, Nt-nt+1]
     end
     for ny in 1:Ny, nz in 1:(Nz >> 1)
         @test u[ny, ModeNumber( nz,  0)] ==      A[ny, nz+1, 1]
@@ -57,4 +60,29 @@
     @test u_new[:, 1:(Nz >> 1) + 1, end - (Nt >> 1) + 1:end] == u[:, 1:(Nz >> 1) + 1, (Nt >> 1) + 2:Nt]
     @test all(u_new[:, 1:(Nz >> 1) + 1, (Nt >> 1) + 2:end - (Nt >> 1) - 1] .== 0)
     @test all(u_new[:, (Nz >> 1) + 2:end, :] .== 0)
+
+    # test setindex using mode number
+    Random.seed!(1)
+    numb = randn(ComplexF64)
+    u[1, ModeNumber(0, 0)] = numb
+    @test u[1, 1, 1] == real(numb)
+    nt = rand(1:(Nt >> 1))
+    u[1, ModeNumber(0, nt)] = numb
+    @test u[1, 1, nt+1] == conj(u[1, 1, Nt-nt+1]) == numb
+    u[1, ModeNumber(0, -nt)] = numb
+    @test u[1, 1, nt+1] == conj(u[1, 1, Nt-nt+1]) == conj(numb)
+    nz = rand(1:(Nz >> 1))
+    nt = rand(0:(Nt >> 1))
+    u[1, ModeNumber(nz, nt)] = numb
+    @test u[1, nz+1, nt+1] == numb
+    nt = rand(-(Nt >> 1):-1)
+    u[1, ModeNumber(nz, nt)] = numb
+    @test u[1, nz+1, Nt+nt+1] == numb
+    nz = rand(-(Nz >> 1):-1)
+    nt = rand(0:(Nt >> 1))
+    u[1, ModeNumber(nz, nt)] = numb
+    @test u[1, -nz+1, Nt-nt+1] == conj(numb)
+    nt = rand(-(Nt >> 1):-1)
+    u[1, ModeNumber(nz, nt)] = numb
+    @test u[1, -nz+1, -nt+1] == conj(numb)
 end

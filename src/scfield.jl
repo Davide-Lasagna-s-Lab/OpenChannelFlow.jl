@@ -51,10 +51,13 @@ Base.@propagate_inbounds function Base.getindex(u::SCField{G}, ny::Int, n::ModeN
     @inbounds val = do_conj ? conj(u[ny, _nz, _nt]) : u[ny, _nz, _nt]
     return val
 end
-Base.@propagate_inbounds function Base.setindex!(u::SCField{G}, val, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
+Base.@propagate_inbounds function Base.setindex!(u::SCField{G, T}, val, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}, T}
     _nz, _nt, do_conj = _convert_modenumber(n, S[3])
+    _nt_sym = _nt != 1 ? S[3] - _nt + 2 : _nt
+    val = (_nz == _nt == 1) ? Complex{T}(real(val)) : val
     @boundscheck checkbounds(u, ny, _nz, _nt)
-    @inbounds u[ny, _nz, _nt] = do_conj ? conj(val) : val
+                @inbounds u[ny, _nz, _nt]     = do_conj ? conj(val) :      val
+    _nz == 1 && @inbounds u[ny, _nz, _nt_sym] = do_conj ?      val  : conj(val)
     return val
 end
 
@@ -68,11 +71,6 @@ function growto!(u::SCField{G, T}, N::NTuple{2, Int}) where {S, G<:ChannelGrid{S
     out = SCField(growto!(grid(u), N), T)
     for ny in 1:S[1], nz in 0:(S[2] >> 1), nt in -(S[3] >> 1):(S[3] >> 1)
         out[ny, ModeNumber(nz, nt)] = u[ny, ModeNumber(nz, nt)]
-    end
-    # need extra loop to assign conjugate symmetric portion of array
-    # ! modify mode number indexing and asignment to not implicitely deal with symmetric portion of array
-    for ny in 1:S[1], nt in 1:(S[3] >> 1)
-        out[ny, 1, end - nt + 1] = u[ny, 1, end - nt + 1]
     end
     return out
 end
