@@ -3,12 +3,7 @@
     Nz = 23 # Nz can be even or odd
     nzs = collect(0:(Nz >> 1) + 1)
     nts = [collect(0:(Nt >> 1)); collect(-(Nt >> 1):-1)]
-    for _nt in 1:Nt
-        n = ModeNumber(nzs[1], nts[_nt])
-        do_conj = _nt > (Nt >> 1) + 1 ? true : false
-        @test OpenChannelFlow._convert_modenumber(n, Nt) == (1, _nt > (Nt >> 1) + 1 ? Nt - _nt + 2 : _nt, do_conj)
-    end
-    for _nz in 2:(Nz >> 1) + 1, _nt in 1:Nt
+    for _nz in 1:(Nz >> 1) + 1, _nt in 1:Nt
         n = ModeNumber(nzs[_nz], nts[_nt])
         @test OpenChannelFlow._convert_modenumber(n, Nt) == (_nz, _nt, false)
     end

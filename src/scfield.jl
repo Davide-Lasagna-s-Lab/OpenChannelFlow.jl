@@ -8,6 +8,7 @@ struct SCField{G<:ChannelGrid, T} <: AbstractArray{Complex{T}, 3}
     data::Array{Complex{T}, 3}
 
     function SCField(g::G, data::Array{Complex{T}, 3}) where {G, T}
+        apply_symmetry!(data)
         data[:, 1, 1] .= real.(data[:, 1, 1])
         new{G, T}(g, data)
     end

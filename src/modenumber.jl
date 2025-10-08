@@ -6,19 +6,14 @@ struct ModeNumber
 end
 
 function _convert_modenumber(n::ModeNumber, Nt)
-    do_conj = false
-    if n.nz > 0
+    if n.nz >= 0
         _nz = n.nz + 1
         _nt = n.nt >= 0 ? n.nt + 1 : Nt + n.nt + 1
-        (n.nz == 0 && n.nt < 0) && (do_conj = true)
-    elseif n.nz < 0
+        do_conj = false
+    else
         _nz = -n.nz + 1
         _nt = n.nt > 0 ? Nt - n.nt + 1 : -n.nt + 1
         do_conj = true
-    else
-        _nz = 1
-        _nt = n.nt >= 0 ? n.nt + 1 : -n.nt + 1
-        do_conj = n.nt >= 0 ? false : true
     end
     return _nz, _nt, do_conj
 end
