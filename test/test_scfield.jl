@@ -1,14 +1,11 @@
 @testset "Spectral channel field                " begin
     # construct grid
     Ny = 16; Nz = 33; Nt = 33
-    g = ChannelGrid(chebpts(Ny),
-                    Nz, Nt,
-                    5.8,
+    g = ChannelGrid(chebpts(Ny), Nz, Nt,
+                    1.0,
                     chebdiff(Ny),
                     chebddiff(Ny),
-                    chebws(Ny),
-                    flags=FFTW.ESTIMATE,
-                    dealias=false)
+                    chebws(Ny))
 
     # some random variables
     A = randn(ComplexF64, Ny, (Nz >> 1) + 1, Nt)
