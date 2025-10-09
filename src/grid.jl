@@ -7,8 +7,10 @@ struct ChannelGrid{S, D1<:AbstractMatrix, D2<:AbstractMatrix}
     ws::Vector{Float64}
     β::Float64
 
-    ChannelGrid(y, Nz, Nt, β, Dy::D1, Dy2::D2, ws, ::Type{T}=Float64) where {T, D1, D2} = 
+    function ChannelGrid(y, Nz, Nt, β, Dy::D1, Dy2::D2, ws, ::Type{T}=Float64) where {T, D1, D2}
+        (isodd(Nz) && isodd(Nt)) || throw(ArgumentError("grid must be odd in spanwise and time directions"))
         new{(length(y), Nz, Nt), typeof(Dy), typeof(Dy2)}(y, Dy, Dy2, ws, β)
+    end
 end
 
 # get points from grid
