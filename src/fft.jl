@@ -3,56 +3,56 @@
 # ---------------- #
 # transform struct #
 # ---------------- #
-struct FFTPlans{DEALIAS, Nz, Nt, PLAN, IPLAN}
+struct FFTPlans{DEALIAS, T, Nz, Nt, PLAN, IPLAN}
     plan::PLAN
     iplan::IPLAN
-    spectral_cache::Array{ComplexF64, 3}
+    spectral_cache::Array{Complex{T}, 3}
 
-    function FFTPlans(Ny::Int, Nz::Int, Nt::Int; dealias::Bool=true, pad::Float64=3/2, flags::UInt32=FFTW.EXHAUSTIVE, timelimit::Real=FFTW.NO_TIMELIMIT)
+    function FFTPlans(Ny::Int, Nz::Int, Nt::Int, ::Type{T}=Float64; dealias::Bool=true, pad::Float64=3/2, flags::UInt32=FFTW.EXHAUSTIVE, timelimit::Real=FFTW.NO_TIMELIMIT) where {T}
         # construct arrays
         if dealias
             Nz_pad, Nt_pad = padded_size(Nz, Nt, pad)
-            spectral_array = zeros(ComplexF64, Ny, (Nz_pad >> 1) + 1, Nt_pad)
-            physical_array = zeros(Float64, Ny, Nz_pad, Nt_pad)
+            spectral_array = zeros(Complex{T}, Ny, (Nz_pad >> 1) + 1, Nt_pad)
+            physical_array = zeros(T, Ny, Nz_pad, Nt_pad)
         else
-            spectral_array = zeros(ComplexF64, Ny, (Nz >> 1) + 1, Nt)
-            physical_array = zeros(Float64, Ny, Nz, Nt)
+            spectral_array = zeros(Complex{T}, Ny, (Nz >> 1) + 1, Nt)
+            physical_array = zeros(T, Ny, Nz, Nt)
         end
 
         # construct plans
         plan = FFTW.plan_rfft(physical_array, [2, 3], flags=flags, timelimit=timelimit)
         iplan = dealias ? FFTW.plan_brfft(spectral_array, Nz_pad, [2, 3], flags=flags, timelimit=timelimit) : FFTW.plan_brfft(spectral_array, Nz, [2, 3], flags=flags, timelimit=timelimit)
 
-        new{dealias, size(physical_array)[2:3]..., typeof(plan), typeof(iplan)}(plan, iplan, spectral_array)
+        new{dealias, T, size(physical_array)[2:3]..., typeof(plan), typeof(iplan)}(plan, iplan, spectral_array)
     end
 end
-get_plan_types(::FFTPlans{DEALIAS, Nz, Nt, PLAN, IPLAN}) where {DEALIAS, Nz, Nt, PLAN, IPLAN} = (PLAN, IPLAN)
-get_array_sizes(::FFTPlans{DEALIAS, Nz, Nt}) where {DEALIAS, Nz, Nt} = Nz, Nt
+get_plan_types(::FFTPlans{DEALIAS, T, Nz, Nt, PLAN, IPLAN}) where {DEALIAS, T, Nz, Nt, PLAN, IPLAN} = (PLAN, IPLAN)
+get_array_sizes(::FFTPlans{DEALIAS, T, Nz, Nt}) where {DEALIAS, T, Nz, Nt} = Nz, Nt
 
 
 # ---------------------- #
 # transformation methods #
 # ---------------------- #
-function (f::FFTPlans{true})(U::Array{ComplexF64}, u::Array{Float64})
+function (f::FFTPlans{true, T})(U::Array{Complex{T}}, u::Array{T}) where {T}
     FFTW.unsafe_execute!(f.plan, u, f.spectral_cache)
     copy_from_padded!(U, f.spectral_cache)
     U .*= 1/prod(size(u)[2:3])
     return U
 end
 
-function (f::FFTPlans{false})(U::Array{ComplexF64}, u::Array{Float64})
+function (f::FFTPlans{false, T})(U::Array{Complex{T}}, u::Array{T}) where {T}
     FFTW.unsafe_execute!(f.plan, u, f.spectral_cache)
     U .= f.spectral_cache./prod(size(u)[2:3])
     return U
 end
 
-function (f::FFTPlans{true})(u::Array{Float64}, U::Array{ComplexF64})
+function (f::FFTPlans{true, T})(u::Array{T}, U::Array{Complex{T}}) where {T}
     copy_to_padded!(apply_mask!(f.spectral_cache), U)
     FFTW.unsafe_execute!(f.iplan, f.spectral_cache, u)
     return u
 end
 
-function (f::FFTPlans{false})(u::Array{Float64}, U::Array{ComplexF64})
+function (f::FFTPlans{false, T})(u::Array{T}, U::Array{Complex{T}}) where {T}
     f.spectral_cache .= U
     FFTW.unsafe_execute!(f.iplan, f.spectral_cache, u)
     return u
@@ -70,7 +70,7 @@ function padded_size(Nz, Nt, factor)
     return Nz_pad, Nt_pad
 end
 
-function copy_to_padded!(upad::Array{ComplexF64}, u::Array{ComplexF64})
+function copy_to_padded!(upad::Array{Complex{T}}, u::Array{Complex{T}}) where {T}
     Nz, Nt = size(u)[2:3]
     Nt_pad = size(upad, 3)
     if Nt > 1
@@ -87,7 +87,7 @@ function copy_to_padded!(upad::Array{ComplexF64}, u::Array{ComplexF64})
     return upad
 end
 
-function copy_from_padded!(u::Array{ComplexF64}, upad::Array{ComplexF64})
+function copy_from_padded!(u::Array{Complex{T}}, upad::Array{Complex{T}}) where {T}
     Nz, Nt = size(u)[2:3]
     Nt_pad = size(upad, 3)
     if Nt > 1
@@ -118,4 +118,4 @@ function apply_symmetry!(u::Array{Complex{T}, 3}) where {T<:AbstractFloat}
     return u
 end
 
-apply_mask!(upad::Array{ComplexF64}) = (upad .= 0.0; return upad)
+apply_mask!(upad::Array{Complex{T}}) where {T} = (upad .= 0.0; return upad)
