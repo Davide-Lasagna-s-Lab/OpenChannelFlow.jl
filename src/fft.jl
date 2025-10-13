@@ -3,58 +3,91 @@
 # ---------------- #
 # transform struct #
 # ---------------- #
-struct FFTPlans{DEALIAS, T, Nz, Nt, PLAN, IPLAN}
+struct FFTPlans{G, T, DEALIAS, PLAN, IPLAN}
     plan::PLAN
     iplan::IPLAN
     spectral_cache::Array{Complex{T}, 3}
 
-    function FFTPlans(Ny::Int, Nz::Int, Nt::Int, ::Type{T}=Float64; dealias::Bool=true, pad::Float64=3/2, flags::UInt32=FFTW.EXHAUSTIVE, timelimit::Real=FFTW.NO_TIMELIMIT) where {T}
+    function FFTPlans(         ::G,
+                               ::Type{T}=Float64;
+                        dealias::Bool=true,
+                          flags::UInt32=FFTW.EXHAUSTIVE,
+                      timelimit::Real=FFTW.NO_TIMELIMIT) where {S, G<:ChannelGrid{S}, T}
+        # grid size
+        Ny = S[1]
+        Nz, Nt = _padded_size(S[2], S[3], dealias ? Val(3/2) : Val(1))
+
         # construct arrays
-        if dealias
-            Nz_pad, Nt_pad = padded_size(Nz, Nt, pad)
-            spectral_array = zeros(Complex{T}, Ny, (Nz_pad >> 1) + 1, Nt_pad)
-            physical_array = zeros(T, Ny, Nz_pad, Nt_pad)
-        else
-            spectral_array = zeros(Complex{T}, Ny, (Nz >> 1) + 1, Nt)
-            physical_array = zeros(T, Ny, Nz, Nt)
-        end
+        spectral_array = zeros(Complex{T}, Ny, (Nz >> 1) + 1, Nt)
+        physical_array = zeros(T, Ny, Nz, Nt)
 
         # construct plans
-        plan = FFTW.plan_rfft(physical_array, [2, 3], flags=flags, timelimit=timelimit)
-        iplan = dealias ? FFTW.plan_brfft(spectral_array, Nz_pad, [2, 3], flags=flags, timelimit=timelimit) : FFTW.plan_brfft(spectral_array, Nz, [2, 3], flags=flags, timelimit=timelimit)
+        plan  = FFTW.plan_rfft(physical_array, [2, 3], flags=flags, timelimit=timelimit)
+        iplan = FFTW.plan_brfft(spectral_array, Nz, [2, 3], flags=flags, timelimit=timelimit)
 
-        new{dealias, T, size(physical_array)[2:3]..., typeof(plan), typeof(iplan)}(plan, iplan, spectral_array)
+        new{G, T, dealias, typeof(plan), typeof(iplan)}(plan, iplan, spectral_array)
     end
 end
-get_plan_types(::FFTPlans{DEALIAS, T, Nz, Nt, PLAN, IPLAN}) where {DEALIAS, T, Nz, Nt, PLAN, IPLAN} = (PLAN, IPLAN)
-get_array_sizes(::FFTPlans{DEALIAS, T, Nz, Nt}) where {DEALIAS, T, Nz, Nt} = Nz, Nt
 
 
-# ---------------------- #
-# transformation methods #
-# ---------------------- #
-function (f::FFTPlans{true, T})(U::Array{Complex{T}}, u::Array{T}) where {T}
-    FFTW.unsafe_execute!(f.plan, u, f.spectral_cache)
-    copy_from_padded!(U, f.spectral_cache)
-    U .*= 1/prod(size(u)[2:3])
-    return U
+# ------------------- #
+# in-place transforms #
+# ------------------- #
+function (f::FFTPlans{G, T, true})(û::SCField{G, T}, u::PCField{G, T}) where {G, T}
+    FFTW.unsafe_execute!(f.plan, parent(u), f.spectral_cache)
+    copy_from_padded!(parent(û), f.spectral_cache)
+    parent(û) .*= 1/prod(size(u)[2:3])
+    return û
 end
 
-function (f::FFTPlans{false, T})(U::Array{Complex{T}}, u::Array{T}) where {T}
-    FFTW.unsafe_execute!(f.plan, u, f.spectral_cache)
-    U .= f.spectral_cache./prod(size(u)[2:3])
-    return U
+function (f::FFTPlans{G, T, false})(û::SCField{G, T}, u::PCField{G, T}) where {G, T}
+    FFTW.unsafe_execute!(f.plan, parent(u), f.spectral_cache)
+    parent(û) .= f.spectral_cache./prod(size(u)[2:3])
+    return û
 end
 
-function (f::FFTPlans{true, T})(u::Array{T}, U::Array{Complex{T}}) where {T}
-    copy_to_padded!(apply_mask!(f.spectral_cache), U)
-    FFTW.unsafe_execute!(f.iplan, f.spectral_cache, u)
+function (f::FFTPlans{G, T, true})(u::PCField{G, T}, û::SCField{G, T}) where {G, T}
+    copy_to_padded!(apply_mask!(f.spectral_cache), parent(û))
+    FFTW.unsafe_execute!(f.iplan, f.spectral_cache, parent(u))
     return u
 end
 
-function (f::FFTPlans{false, T})(u::Array{T}, U::Array{Complex{T}}) where {T}
-    f.spectral_cache .= U
-    FFTW.unsafe_execute!(f.iplan, f.spectral_cache, u)
+function (f::FFTPlans{G, T, false})(u::PCField{G, T}, û::SCField{G, T}) where {G, T}
+    f.spectral_cache .= parent(û)
+    FFTW.unsafe_execute!(f.iplan, f.spectral_cache, parent(u))
+    return u
+end
+
+function (f::FFTPlans{G, T, false})(u::PCField{G, T}, û::SCField{G, T}, ::Val{false}) where {G, T}
+    FFTW.unsafe_execute!(f.iplan, parent(û), parent(u))
+    return u
+end
+
+
+# --------------------- #
+# allocating transforms #
+# --------------------- #
+function FFT(u::PCField{G, T}) where {S, G<:ChannelGrid{S}, T}
+    û = SCField(grid(u), T)
+    parent(û) .= rfft(parent(u), [2, 3])./(S[2]*S[3])
+    return û
+end
+
+function FFT(u::PCField{G, T}, N) where {S, G<:ChannelGrid{S}, T}
+    û = growto!(SCField(grid(u), rfft(parent(u), [2, 3])./(S[2]*S[3])), N)
+    return û
+end
+
+function IFFT(û::SCField{G, T}) where {S, G<:ChannelGrid{S}, T}
+    u = PCField(grid(û), T)
+    parent(u) .= brfft(parent(û), S[2], [2, 3])
+    return u
+end
+
+function IFFT(û::SCField{G, T}, N) where {G, T}
+    u = PCField(growto!(grid(û), N), T)
+    û_new = growto!(û, N)
+    parent(u) .= brfft(parent(û_new), N[1], [2, 3])
     return u
 end
 
@@ -62,14 +95,6 @@ end
 # --------------- #
 # utility methods #
 # --------------- #
-function padded_size(Nz, Nt, factor)
-    Nz_pad = ceil(Int, Nz*factor)
-    Nt_pad = ceil(Int, Nt*factor)
-    Nz_pad = (Nz_pad - Nz) % 2 == 0 ? Nz_pad : Nz_pad + 1
-    Nt_pad = (Nt_pad - Nt) % 2 == 0 ? Nt_pad : Nt_pad + 1
-    return Nz_pad, Nt_pad
-end
-
 function copy_to_padded!(upad::Array{Complex{T}}, u::Array{Complex{T}}) where {T}
     Nz, Nt = size(u)[2:3]
     Nt_pad = size(upad, 3)

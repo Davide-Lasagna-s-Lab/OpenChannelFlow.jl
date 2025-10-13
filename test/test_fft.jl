@@ -1,27 +1,36 @@
 @testset "FFT transforms                        " begin
-    # randon signal
+    # construct grid
     Ny = 16; Nz = 33; Nt = 11
-    Â = OpenChannelFlow.apply_symmetry!(rand(ComplexF64, Ny, (Nz >> 1) + 1, Nt))
-    Â[:, 1, 1] .= real.(Â[:, 1, 1])
-    A = zeros(Float64, Ny, Nz, Nt)
-    A_dealiased = zeros(Float64, Ny, OpenChannelFlow.padded_size(Nz, Nt, 3/2)...)
-    B = zeros(ComplexF64, Ny, (Nz >> 1) + 1, Nt)
+    g = ChannelGrid(chebpts(Ny), Nz, Nt,
+                    1.0,
+                    chebdiff(Ny),
+                    chebddiff(Ny),
+                    chebws(Ny))
 
     # create plans
-    plans = @test_nowarn OpenChannelFlow.FFTPlans(Ny, Nz, Nt; dealias=false, flags=FFTW.ESTIMATE)
-    plans_dealiased = @test_nowarn OpenChannelFlow.FFTPlans(Ny, Nz, Nt; dealias=true, flags=FFTW.ESTIMATE)
+    plans  = @test_nowarn OpenChannelFlow.FFTPlans(g; dealias=false, flags=FFTW.ESTIMATE)
+    plansd = @test_nowarn OpenChannelFlow.FFTPlans(g; dealias=true,  flags=FFTW.ESTIMATE)
 
-    plans(A, Â)
-    plans(B, A)
-    @test Â ≈ B
+    # randon signal
+    U  = SCField(g, rand(ComplexF64, Ny, (Nz >> 1) + 1, Nt))
+    Ud = growto!(U, OpenChannelFlow._padded_size(Nz, Nt, Val(3/2)))
+    u  = PCField(g)
+    ud = PCField(g, dealias=true)
 
-    plans_dealiased(A_dealiased, Â)
-    plans_dealiased(B, A_dealiased)
-    @test Â ≈ B
+    # test transforms
+    @test  plans(similar(U),  plans(u,  U))  ≈ U
+    @test plansd(similar(U), plansd(ud, U)) ≈ U
 
+    # test allocations
     fun(plan, A, B) = @allocated plan(A, B)
-    @test fun(plans, A, Â) == 0
-    @test fun(plans, B, A) == 0
-    @test fun(plans_dealiased, A_dealiased, Â) == 0
-    @test fun(plans_dealiased, B, A_dealiased) == 0
+    @test fun(plans,  u,          U)  == 0
+    @test fun(plans,  similar(U), u)  == 0
+    @test fun(plansd, ud,         U)  == 0
+    @test fun(plansd, similar(U), ud) == 0
+
+    # test allocating transforms
+    @test FFT(plans(similar(u), U)) ≈ U
+    @test IFFT(U) == plans(similar(u), U)
+    @test FFT(plans(similar(u), U), OpenChannelFlow._padded_size(Nz, Nt, Val(3/2))) ≈ Ud
+    @test IFFT(U, OpenChannelFlow._padded_size(Nz, Nt, Val(3/2))) == plansd(similar(ud), U)
 end

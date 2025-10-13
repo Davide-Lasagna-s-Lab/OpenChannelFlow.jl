@@ -6,6 +6,7 @@ export ChannelGrid, points, growto!
 export ModeNumber
 export SCField, grid
 export PCField
+export FFT, IFFT
 # export VectorField, grad!, divergence!, laplacian!, convection!, convection2!
 # export ProjectedField, expand!, project!
 
@@ -13,6 +14,8 @@ include("grid.jl")
 include("modenumber.jl")
 include("scfield.jl")
 include("pcfield.jl")
+# include("vectorfield.jl")
+# include("broadcasting.jl")
 include("fft.jl")
 # include("vectorcalculus.jl")
 # include("operators.jl")
