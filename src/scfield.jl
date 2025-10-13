@@ -67,9 +67,8 @@ end
 # --------------- #
 grid(u::SCField) = u.grid
 
-# TODO: remove exclamation point
-function growto!(u::SCField{G, T}, N::NTuple{2, Int}) where {S, G<:ChannelGrid{S}, T}
-    out = SCField(growto!(grid(u), N), T)
+function growto(u::SCField{G, T}, N::NTuple{2, Int}) where {S, G<:ChannelGrid{S}, T}
+    out = SCField(growto(grid(u), N), T)
     for ny in 1:S[1], nz in 0:(S[2] >> 1), nt in -(S[3] >> 1):(S[3] >> 1)
         out[ny, ModeNumber(nz, nt)] = u[ny, ModeNumber(nz, nt)]
     end

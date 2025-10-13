@@ -18,4 +18,4 @@ points(g::ChannelGrid{S}, T) where {S}       = (g.y, (0:(S[2] - 1))/(S[2])*(2π/
 points(g::ChannelGrid, T, S::NTuple{2, Int}) = (g.y, (0:(S[1] - 1))/(S[1])*(2π/g.β), (0:(S[2] - 1))/(S[2])*T)
 
 # grow grid size
-growto!(g::ChannelGrid, N::NTuple{2, Int}) = ChannelGrid(g.y, N..., g.β, g.Dy, g.Dy2, g.ws)
+growto(g::ChannelGrid, N::NTuple{2, Int}) = ChannelGrid(g.y, N..., g.β, g.Dy, g.Dy2, g.ws)

@@ -13,7 +13,7 @@
 
     # randon signal
     U  = SCField(g, rand(ComplexF64, Ny, (Nz >> 1) + 1, Nt))
-    Ud = growto!(U, OpenChannelFlow._padded_size(Nz, Nt, Val(3/2)))
+    Ud = growto(U, OpenChannelFlow._padded_size(Nz, Nt, Val(3/2)))
     u  = PCField(g)
     ud = PCField(g, dealias=true)
 

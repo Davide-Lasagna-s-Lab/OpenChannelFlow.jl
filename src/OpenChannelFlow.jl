@@ -2,7 +2,7 @@ module OpenChannelFlow
 
 using FFTW
 
-export ChannelGrid, points, growto!
+export ChannelGrid, points, growto
 export ModeNumber
 export SCField, grid
 export PCField

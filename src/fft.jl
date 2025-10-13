@@ -74,7 +74,7 @@ function FFT(u::PCField{G, T}) where {S, G<:ChannelGrid{S}, T}
 end
 
 function FFT(u::PCField{G, T}, N) where {S, G<:ChannelGrid{S}, T}
-    û = growto!(SCField(grid(u), rfft(parent(u), [2, 3])./(S[2]*S[3])), N)
+    û = growto(SCField(grid(u), rfft(parent(u), [2, 3])./(S[2]*S[3])), N)
     return û
 end
 
@@ -85,9 +85,8 @@ function IFFT(û::SCField{G, T}) where {S, G<:ChannelGrid{S}, T}
 end
 
 function IFFT(û::SCField{G, T}, N) where {G, T}
-    u = PCField(growto!(grid(û), N), T)
-    û_new = growto!(û, N)
-    parent(u) .= brfft(parent(û_new), N[1], [2, 3])
+    u = PCField(growto(grid(û), N), T)
+    parent(u) .= brfft(parent(growto(û, N)), N[1], [2, 3])
     return u
 end
 

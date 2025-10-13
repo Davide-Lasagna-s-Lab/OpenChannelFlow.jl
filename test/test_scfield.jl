@@ -50,8 +50,8 @@
         @test u[ny, ModeNumber(-nz, -nt)] == conj(A[ny, nz+1,    nt+1])
     end
 
-    # test growto!
-    u_new = growto!(u, (65, 49))
+    # test growto
+    u_new = growto(u, (65, 49))
     @test size(u_new) == (Ny, (65 >> 1) + 1, 49)
     @test u_new[:, 1:(Nz >> 1) + 1, 1:(Nt >> 1) + 1] == u[:, 1:(Nz >> 1) + 1, 1:(Nt >> 1) + 1]
     @test u_new[:, 1:(Nz >> 1) + 1, end - (Nt >> 1) + 1:end] == u[:, 1:(Nz >> 1) + 1, (Nt >> 1) + 2:Nt]
