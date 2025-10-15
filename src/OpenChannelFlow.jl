@@ -15,7 +15,7 @@ include("modenumber.jl")
 include("scfield.jl")
 include("pcfield.jl")
 include("vectorfield.jl")
-# include("broadcasting.jl")
+include("broadcasting.jl")
 include("fft.jl")
 
 # TODO: try to make this compatible with the flows interface as well as the ReSolver one?
