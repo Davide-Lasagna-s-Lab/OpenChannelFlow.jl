@@ -56,3 +56,9 @@ function dds!(out::VectorField{N, F}, u::VectorField{N, F}) where {N, F<:SCField
     end
     return out
 end
+function dds!(out::ProjectedField{G, M}, a::ProjectedField{G, M}) where {S, G<:ChannelGrid{S}, M}
+    for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), m in 1:M
+        @inbounds out[m, ModeNumber(nz, nt)] = 1im*nt*a[m, ModeNumber(nz, nt)]
+    end
+    return out
+end

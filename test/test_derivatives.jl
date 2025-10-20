@@ -21,7 +21,19 @@
     @test OpenChannelFlow.d2dy2!(SCField(g), u) ≈ FFT(PCField(g, d2udy2_fun, 2π))
     @test OpenChannelFlow.ddz!(  SCField(g), u) ≈ FFT(PCField(g, dudz_fun,   2π))
     @test OpenChannelFlow.d2dz2!(SCField(g), u) ≈ FFT(PCField(g, d2udz2_fun, 2π))
-    @test OpenChannelFlow.dds!(  SCField(g), u) ≈ FFT(PCField(g, duds_fun,   2π))
+    @test                 dds!(  SCField(g), u) ≈ FFT(PCField(g, duds_fun,   2π))
+
+    # test time derivative of projected field
+    M = 10
+    Ψ = zeros(ComplexF64, Ny, M, (Nz >> 1) + 1, Nt)
+    for nt in 1:Nt, nz in 1:((Nz >> 1) + 1)
+        Ψ[:, :, nz, nt] .= qr(randn(ComplexF64, Ny, M)).Q[:, 1:M]
+    end
+    for m in 1:M
+        OpenChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :]))
+    end
+    a = project(FFT(VectorField(g, (u_fun,), 2π)), Ψ)
+    @test dds!(similar(a), a) ≈ project(FFT(VectorField(g, (duds_fun,), 2π)), Ψ)
 
     # test allocation
     fun(dx, a, b) = @allocated dx(a, b)
@@ -29,5 +41,6 @@
     @test fun(OpenChannelFlow.d2dy2!, SCField(g), u) == 0
     @test fun(OpenChannelFlow.ddz!,   SCField(g), u) == 0
     @test fun(OpenChannelFlow.d2dz2!, SCField(g), u) == 0
-    @test fun(OpenChannelFlow.dds!,   SCField(g), u) == 0
+    @test fun(                dds!,   SCField(g), u) == 0
+    @test fun(                dds!,   similar(a), a) == 0
 end

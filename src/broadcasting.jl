@@ -1,7 +1,7 @@
 # General broadcasting rules for both spectral and physical channel field types
 
 # union field type
-const ChannelField = Union{SCField, PCField, VectorField}
+const ChannelField = Union{SCField, PCField, ProjectedField, VectorField}
 
 # basic array broadcasting behaviour
 Base.BroadcastStyle(::Type{F}) where {F<:ChannelField} = Broadcast.ArrayStyle{F}()

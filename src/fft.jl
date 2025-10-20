@@ -149,7 +149,7 @@ function copy_from_padded!(u::Array{Complex{T}}, upad::Array{Complex{T}}) where 
     return u
 end
 
-function apply_symmetry!(u::Array{Complex{T}, 3}) where {T<:AbstractFloat}
+function apply_symmetry!(u::AbstractArray{Complex{T}, 3}) where {T<:AbstractFloat}
     Ny, _, Nt = size(u)
     for nt in 2:(((Nt - 1) >> 1) + 1), ny in 1:Ny
         pos = u[ny, 1, nt]
