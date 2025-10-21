@@ -68,8 +68,7 @@ end
 # ------------------ #
 # conversion methods #
 # ------------------ #
-# TODO: check if inlining is a useful optimisation
-@inline channel_int(u, ws, v, N) = @inbounds sum(ws[i]*dot(u[i], v[i]) for i in 1:N)
+channel_int(u, ws, v, N) = sum(ws[i]*dot(u[i], v[i]) for i in 1:N)
 
 function project!(a::ProjectedField{G, M}, u::VectorField{N, <:SCField{G}}) where {S, G<:ChannelGrid{S}, M, N}
     a .= 0.0
