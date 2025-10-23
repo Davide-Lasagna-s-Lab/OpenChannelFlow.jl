@@ -20,7 +20,8 @@ VectorField(g::ChannelGrid, funcs, period, ::Type{T}=Float64; dealias::Bool=fals
 # array methods #
 # ------------- #
 Base.IndexStyle(::Type{<:VectorField})                            = Base.IndexLinear()
-Base.getindex(q::VectorField, i::Int)                             = q.elements[i]
+Base.parent(q::VectorField)                                       = q.elements
+Base.getindex(q::VectorField, i::Int)                             = parent(q)[i]
 Base.size(::VectorField{N}) where {N}                             = (N,)
 Base.eltype(q::VectorField)                                       = eltype(q.elements[1])
 Base.similar(q::VectorField{N}, ::Type{T}=eltype(q)) where {N, T} = VectorField([similar(q.elements[n], T) for n in 1:N]...)
