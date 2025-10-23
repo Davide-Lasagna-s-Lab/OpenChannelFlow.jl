@@ -10,6 +10,8 @@ export VectorField
 export ProjectedField, modes, project!, project, expand!
 export FFT, IFFT
 export dds!
+export shift!
+export dot, norm, minnormdiff
 
 include("grid.jl")
 include("modenumber.jl")
@@ -20,6 +22,7 @@ include("projectedfield.jl")
 include("broadcasting.jl")
 include("fft.jl")
 include("derivatives.jl")
+include("shifts.jl")
 # include("norms.jl")
 # include("nonlinear.jl")
 # include("linearised.jl")
