@@ -4,13 +4,16 @@
 # projected channel field #
 # ----------------------- #
 struct ProjectedField{G, M, T, A} <: AbstractArray{Complex{T}, 3}
+    grid::G
     data::Array{Complex{T}, 3}
     modes::A
 
-    ProjectedField{G}(data::Array{Complex{T}}, modes::A) where {G, T, A} = new{G, size(data, 1), T, A}(data, modes)
+    function ProjectedField(g::G, data::Array{Complex{T}, 3}, modes::A) where {G, T, A}
+        _check_compatibility(g, data, modes)
+        new{G, size(data, 1), T, A}(g, data, modes)
+    end
 end
-ProjectedField(::Type{G}, modes, ::Type{T}=Float64) where {S, G<:ChannelGrid{S}, T} = ProjectedField{G}(zeros(Complex{T}, no_of_modes(modes), (S[2] >> 1) + 1, S[3]), modes)
-ProjectedField(g::ChannelGrid, modes, ::Type{T}=Float64) where {T} = ProjectedField(typeof(g), modes, T)
+ProjectedField(g::ChannelGrid{S}, modes, ::Type{T}=Float64) where {S, T} = ProjectedField(g, zeros(Complex{T}, no_of_modes(modes), (S[2] >> 1) + 1, S[3]), modes)
 
 
 # --------------- #
@@ -18,6 +21,15 @@ ProjectedField(g::ChannelGrid, modes, ::Type{T}=Float64) where {T} = ProjectedFi
 # --------------- #
 no_of_modes(modes::Array{Complex{T}, 4}) where {T} = size(modes, 2)
 modes(a::ProjectedField) = a.modes
+grid(a::ProjectedField) = a.grid
+
+function _check_compatibility(::ChannelGrid{S}, data, modes) where {S}
+    (size(modes, 1) % S[1] == 0 &&
+    (S[2] >> 1) + 1 == size(modes, 3) == size(data, 2) &&
+     S[3]           == size(modes, 4) == size(data, 3)) || throw(ArgumentError("grid, data, and/or modes are not compatible sizes"))
+    size(data, 1) == no_of_modes(modes) || throw(ArgumentError("number of modes available not compatible with data"))
+    return nothing
+end
 
 
 # ----------------- #
@@ -27,9 +39,9 @@ Base.IndexStyle(::Type{<:ProjectedField})                            = Base.Inde
 Base.parent(a::ProjectedField)                                       = a.data
 Base.eltype(::ProjectedField{G, M, T}) where {G, M, T}               = Complex{T}
 Base.size(a::ProjectedField)                                         = size(parent(a))
-Base.similar(a::ProjectedField{G}, ::Type{T}=eltype(a)) where {G, T} = ProjectedField{G}(similar(parent(a), T), modes(a))
-Base.copy(a::ProjectedField{G}) where {G}                            = ProjectedField{G}(copy(parent(a)), modes(a))
-Base.zero(a::ProjectedField{G}) where {G}                            = ProjectedField{G}(zero(parent(a)), modes(a))
+Base.similar(a::ProjectedField{G}, ::Type{T}=eltype(a)) where {G, T} = ProjectedField(grid(a), similar(parent(a), T), modes(a))
+Base.copy(a::ProjectedField{G}) where {G}                            = ProjectedField(grid(a), copy(parent(a)), modes(a))
+Base.zero(a::ProjectedField{G}) where {G}                            = ProjectedField(grid(a), zero(parent(a)), modes(a))
 Base.abs(a::ProjectedField)                                          = (b = zero(a); b .= abs.(a); return b)
 
 # ---------------- #
@@ -77,7 +89,7 @@ function project!(a::ProjectedField{G, M}, u::VectorField{N, <:SCField{G}}) wher
     end
     return a
 end
-project(u::VectorField{N, <:SCField{G}}, modes) where {N, G} = project!(ProjectedField(G, modes), u)
+project(u::VectorField, modes) = project!(ProjectedField(grid(u), modes), u)
 
 function expand!(u::VectorField{N, <:SCField{G}}, a::ProjectedField{G, M}) where {N, S, G<:ChannelGrid{S}, M}
     for n in 1:N, nt in 1:S[3], nz in 1:(S[2] >> 1) + 1
@@ -85,3 +97,4 @@ function expand!(u::VectorField{N, <:SCField{G}}, a::ProjectedField{G, M}) where
     end
     return u
 end
+expand(a::ProjectedField) = expand!(VectorField(grid(a)), a)

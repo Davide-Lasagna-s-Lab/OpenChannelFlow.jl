@@ -7,7 +7,7 @@ export ModeNumber
 export SCField, grid
 export PCField
 export VectorField
-export ProjectedField, modes, project!, project, expand!
+export ProjectedField, modes, project!, project, expand!, expand
 export FFT, IFFT
 export dds!
 export shift!
@@ -18,9 +18,9 @@ include("modenumber.jl")
 include("scfield.jl")
 include("pcfield.jl")
 include("vectorfield.jl")
+include("fft.jl")
 include("projectedfield.jl")
 include("broadcasting.jl")
-include("fft.jl")
 include("derivatives.jl")
 include("shifts.jl")
 # include("norms.jl")
