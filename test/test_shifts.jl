@@ -35,6 +35,6 @@
     @test shift!(copy(u), (sz, st)) ≈   u_shift atol=1e-12
     a       = project(u,       Ψ)
     a_shift = project(u_shift, Ψ)
-    @test shift!(     a,  (0,  0),  1.0) === a
-    @test shift!(copy(a), (sz, st), 1.0) ≈   a_shift atol=1e-12
+    @test shift!(     a,  (0,  0),) === a
+    @test shift!(copy(a), (sz, st)) ≈   a_shift atol=1e-12
 end
