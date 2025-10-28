@@ -31,6 +31,7 @@
     end
     for m in 1:M
         OpenChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :]))
+        Ψ[:, m, 1, 1] .= real.(Ψ[:, m, 1, 1])
     end
     a = project(FFT(VectorField(g, (u_fun,), 2π)), Ψ)
     @test dds!(similar(a), a) ≈ project(FFT(VectorField(g, (duds_fun,), 2π)), Ψ)
