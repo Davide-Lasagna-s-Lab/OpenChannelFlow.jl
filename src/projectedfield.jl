@@ -97,5 +97,4 @@ function expand!(u::VectorField{N, <:SCField{G}}, a::ProjectedField{G, M}) where
     end
     return u
 end
-expand(a::ProjectedField) = expand!(VectorField(grid(a)), a)
-# TODO: let it predict vector field size from grid and mode relative sizes
+expand(a::ProjectedField{G}) where {S, G<:ChannelGrid{S}} = expand!(VectorField(grid(a), N=size(modes(a), 1)÷S[1]), a)
