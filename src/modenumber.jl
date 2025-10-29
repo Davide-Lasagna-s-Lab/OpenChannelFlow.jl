@@ -17,5 +17,3 @@ function _convert_modenumber(n::ModeNumber, Nt)
     end
     return _nz, _nt, do_conj
 end
-
-# TODO: add macros for simpler looping over all wavenumbers

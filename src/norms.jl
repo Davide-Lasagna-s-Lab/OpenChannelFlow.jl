@@ -3,7 +3,6 @@
 # ----------------------- #
 # standard inner products #
 # ----------------------- #
-# TODO: replace loop with macro that doesn't repeat iterations
 function LinearAlgebra.dot(u::SCField{G}, v::SCField{G}) where {S, G<:ChannelGrid{S}}
     sum = 0.0
     for nt in -(S[3] >> 1):(S[3] >> 1), nz in -(S[2] >> 1):(S[2] >> 1), ny in 1:S[1]
