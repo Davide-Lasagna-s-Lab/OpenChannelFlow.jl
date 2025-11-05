@@ -1,15 +1,15 @@
 # Implementation of the RPCF grid
 
-struct ChannelGrid{S, D1<:AbstractMatrix, D2<:AbstractMatrix}
-    y::Vector{Float64}
+struct ChannelGrid{S, T, D1<:AbstractMatrix, D2<:AbstractMatrix}
+    y::Vector{T}
     Dy::D1
     Dy2::D2
-    ws::Vector{Float64}
-    β::Float64
+    ws::Vector{T}
+    β::T
 
     function ChannelGrid(y, Nz, Nt, β, Dy::D1, Dy2::D2, ws, ::Type{T}=Float64) where {T, D1, D2}
         (isodd(Nz) && isodd(Nt)) || throw(ArgumentError("grid must be odd in spanwise and time directions"))
-        new{(length(y), Nz, Nt), typeof(Dy), typeof(Dy2)}(y, Dy, Dy2, ws, β)
+        new{(length(y), Nz, Nt), T, typeof(Dy), typeof(Dy2)}(T.(y), T.(Dy), T.(Dy2), T.(ws), T(β))
     end
 end
 
