@@ -1,46 +1,79 @@
-# Definitions of the RHS operators for RPCF.
+# Explicit and implicit flow operators for the nonlinear and linearised
+# Navier-Stokes equations.
 
-struct RPCFNavierStokesOperator{NSO}
-    NSOper::NSO
-    Ro::Float64
+# ----------------- #
+# implicit operator #
+# ----------------- #
+mutable struct ImplicitOperator{T}
+    Re::T
 
-    function RPCFNavierStokesOperator(g::RPCFGrid, Re, Ro)
-        nso = NavierStokesOperator(g, Re)
-        new{typeof(nso)}(nso, Float64.(Ro))
+    ImplicitOperator(Re::Real, ::Type{T}=Float64) where {T} = new{T}(T(Re))
+end
+
+function (op::ImplicitOperator)(::Real, u::VectorField, out::VectorField)
+    laplacian!(out, u)
+    out .*= 1/op.Re
+    return out
+end
+
+
+# ----------------- #
+# explicit operator #
+# ----------------- #
+mutable struct ExplicitOperator{SF, PF, FFT, T}
+              Ro::T
+     const plans::FFT
+    const scache::NTuple{2, VectorField{3, SF}}
+    const pcache::NTuple{3, VectorField{3, PF}}
+
+    function ExplicitOperator(g::G, Ro::Real, ::Type{T}=Float64, flags=FFTW.EXHAUSTIVE) where {G, T}
+        scache = ntuple(_->VectorField(g, T, N=3, type=SCField), 2)
+        pcache = ntuple(_->VectorField(g, T, N=3, type=PCField, dealias=true), 3)
+        plans = FFTPlans(g, T, dealias=true, flags=flags)
+        new{eltype(scache[1]), eltype(pcache[1]), typeof(plans), T}(T(Ro), plans, scache, pcache)
     end
 end
 
-function (f::RPCFNavierStokesOperator)(N_u::VectorField{3}, u::VectorField{3})
-    # compute standard NS operator
-    f.NSOper(N_u, u)
+# operator for ReSolver.jl
+function (op::ExplicitOperator{SF})(::Real,
+                                   u::VectorField{3, SF},
+                                 out::VectorField{3, SF};
+                                 add::Bool=false) where {SF}
+    # aliases
+    dudy = op.scache[1]
+    dudz = op.scache[2]
+    U    = op.pcache[1]
+    dUdy = op.pcache[2]
+    dUdz = op.pcache[3]
 
-    # compute cross product term
-    @. N_u[1] += f.Ro*u[2]
-    @. N_u[2] -= f.Ro*u[1]
+    # compute derivatives
+    ddy!(dudy, u)
+    ddz!(dudz, u)
 
-    return N_u
-end
-
-
-struct RPCFGradientOperator{GRAD}
-    GradOper::GRAD
-    Ro::Float64
-
-    function RPCFGradientOperator(g::RPCFGrid, Re, Ro)
-        grad = GradientOperator(g, Re)
-        new{typeof(grad)}(grad, Float64.(Ro))
+    # advection term
+    op.plans(U, u)
+    op.plans(dUdy, dudy)
+    op.plans(dUdz, dudz)
+    for n in 1:3
+        @. dUdy[n] = U[2]*dUdy[n] + U[3]*dUdz[n] # overwrite field that isn't needed anymore
     end
+    if add
+        out .-= op.plans(dudy, dUdy) # overwrite field that isn't needed anymore
+    else
+        out .= .-op.plans(dudy, dUdy) # overwrite field that isn't needed anymore
+    end
+
+    # coriolis term
+    out[1] .+= op.Ro.*u[2]
+    out[2] .-= op.Ro.*u[1]
+
+    return out
 end
 
-function (f::RPCFGradientOperator)(M_ur::VectorField{3}, u::VectorField{3}, r::VectorField{3})
-    # compute standard gradient operator
-    f.GradOper(M_ur, u, r)
-
-    # compute cross product terms
-    @. M_ur[1] += f.Ro*r[2]
-    @. M_ur[2] -= f.Ro*r[1]
-
-    return M_ur
+# operator for Flows.jl
+function (op::ExplicitOperator{SF})(::Real,
+                                   q::VectorField{2, SF},
+                                 out::VectorField{2, SF},
+                                 add::Bool=false) where {SF}
+    throw(error("Not implemented"))
 end
-
-Objective(g::RPCFGrid, Re::Real, Ro::Real, modes::Array{ComplexF64, 4}, base::Vector{Float64}) = ReSolverInterface.Objective(g, Re, modes, base, navierStokesOperator=RPCFNavierStokesOperator(g, Re, Ro), gradientOperator=RPCFGradientOperator(g, Re, Ro), norm_scaling=FarazmandScaling(g.ω, g.β))

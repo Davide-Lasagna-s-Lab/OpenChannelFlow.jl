@@ -19,14 +19,15 @@ VectorField(g::ChannelGrid, funcs, period, ::Type{T}=Float64; dealias::Bool=fals
 # ------------- #
 # array methods #
 # ------------- #
-Base.IndexStyle(::Type{<:VectorField})                            = Base.IndexLinear()
-Base.parent(q::VectorField)                                       = q.elements
-Base.getindex(q::VectorField, i::Int)                             = parent(q)[i]
-Base.size(::VectorField{N}) where {N}                             = (N,)
-Base.eltype(q::VectorField)                                       = eltype(q.elements[1])
-Base.similar(q::VectorField{N}, ::Type{T}=eltype(q)) where {N, T} = VectorField([similar(q.elements[n], T) for n in 1:N]...)
-Base.copy(q::VectorField{N}) where {N}                            = VectorField([copy(q.elements[n]) for n in 1:N]...)
-Base.zero(q::VectorField{N}) where {N}                            = VectorField([zero(q.elements[n]) for n in 1:N]...)
+Base.IndexStyle(::Type{<:VectorField})                              = Base.IndexLinear()
+Base.parent(q::VectorField)                                         = q.elements
+Base.getindex(q::VectorField, i::Int)                               = parent(q)[i]
+Base.size(::VectorField{N}) where {N}                               = (N,)
+Base.eltype(::VectorField{N, F}) where {N, F}                       = F
+datatype(q::VectorField)                                            = eltype(q.elements[1])
+Base.similar(q::VectorField{N}, ::Type{T}=datatype(q)) where {N, T} = VectorField([similar(q.elements[n], T) for n in 1:N]...)
+Base.copy(q::VectorField{N}) where {N}                              = VectorField([copy(q.elements[n]) for n in 1:N]...)
+Base.zero(q::VectorField{N}) where {N}                              = VectorField([zero(q.elements[n]) for n in 1:N]...)
 
 
 # --------- #

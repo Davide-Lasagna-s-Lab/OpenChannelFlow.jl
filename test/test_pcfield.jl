@@ -8,7 +8,7 @@
                     chebddiff(Ny),
                     chebws(Ny))
 
-    for dealias in [false]
+    for dealias in [false, true]
         # test constructors
         u = PCField(g, dealias=dealias)
         data_size = OpenChannelFlow._padded_size(Nz, Nt, dealias ? Val(3/2) : Val(1))

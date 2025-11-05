@@ -35,7 +35,8 @@
     # test interface
     @test size(u) == (2,)
     @test length(u) == 2
-    @test eltype(u) == Float64
+    @test eltype(u) == typeof(PCField(g))
+    @test OpenChannelFlow.datatype(u) == Float64
     @test similar(u) isa VectorField{2, PCField{typeof(g), Float64}}
     @test copy(u)[1] == u[1]
     @test copy(u)[2] == u[2]

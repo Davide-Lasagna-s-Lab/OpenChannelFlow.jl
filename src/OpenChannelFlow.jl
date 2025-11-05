@@ -24,9 +24,6 @@ include("broadcasting.jl")
 include("derivatives.jl")
 include("shifts.jl")
 include("norms.jl")
-# include("nonlinear.jl")
-# include("linearised.jl")
-
-# TODO: try to make this compatible with the flows interface as well as the ReSolver one?
+include("operators.jl")
 
 end
