@@ -1,6 +1,8 @@
 # Explicit and implicit flow operators for the nonlinear and linearised
 # Navier-Stokes equations.
 
+# TODO: make sure it's compatible with pipe flow as well
+
 # ----------------- #
 # implicit operator #
 # ----------------- #

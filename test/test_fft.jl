@@ -23,6 +23,7 @@
 
     # test allocations
     fun(plan, A, B) = @allocated plan(A, B)
+    fun(plansd, ud, U) # required to avoid allocation when first called (for some unknown reason)
     @test fun(plans,  u,          U)  == 0
     @test fun(plans,  similar(U), u)  == 0
     @test fun(plansd, ud,         U)  == 0

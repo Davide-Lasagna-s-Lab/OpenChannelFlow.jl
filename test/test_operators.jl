@@ -1,7 +1,6 @@
 @testset "Implicit operator                     " begin
     # function definitions
-    Re = rand()*50
-    u_fun(y, z, t)      = (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
+    u_fun(y, z, t)      = y + (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
     v_fun(y, z, t)      = cos(π*y/2)*exp(sin(5.8*z))*cos(sin(t))
     d2udy2_fun(y, z, t) = -2*exp(cos(5.8*z))*atan(sin(t))
     d2udz2_fun(y, z, t) = (5.8^2)*(1 - y^2)*(sin(5.8*z)^2 - cos(5.8*z))*exp(cos(5.8*z))*atan(sin(t))
@@ -19,6 +18,7 @@
                     chebws(Ny))
 
     # test laplacian calculation
+    Re = rand()*50
     op = OpenChannelFlow.ImplicitOperator(Re)
     u = FFT(VectorField(g, (u_fun, v_fun,), 2π))
     @test op(0.0, u, similar(u)) ≈ FFT(VectorField(g, (Δu_fun, Δv_fun), 2π))
@@ -26,10 +26,10 @@ end
 
 @testset "Explicit operator                     " begin
     # function definitions
-    u_fun(y, z, t)      = (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
+    u_fun(y, z, t)      = y + (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
     v_fun(y, z, t)      = cos(π*y/2)^2*exp(sin(5.8*z))*cos(sin(t))
     w_fun(y, z, t)      = cos(π*y)*(1 - y^2)*exp(sin(5.8*z))*cos(t)^2
-    dudy_fun(y, z, t)   = -2*y*exp(cos(5.8*z))*atan(sin(t))
+    dudy_fun(y, z, t)   = 1 - 2*y*exp(cos(5.8*z))*atan(sin(t))
     dudz_fun(y, z, t)   = -5.8*(1 - y^2)*sin(5.8*z)*exp(cos(5.8*z))*atan(sin(t))
     dvdy_fun(y, z, t)   = -(π/2)*sin(π*y)*exp(sin(5.8*z))*cos(sin(t))
     dvdz_fun(y, z, t)   = 5.8*cos(π*y/2)^2*cos(5.8*z)*exp(sin(5.8*z))*cos(sin(t))
@@ -53,7 +53,6 @@ end
     u = FFT(VectorField(g, (u_fun, v_fun, w_fun), 2π))
     out = similar(u)
     op(0.0, u, out, add=false)
-    yes = FFT(VectorField(g, (u_out_fun, v_out_fun, w_out_fun), 2π))
     @test op(0.0, u, out, add=false) ≈ FFT(VectorField(g, (u_out_fun, v_out_fun, w_out_fun), 2π))
     @test op(0.0, u, out, add=true)  ≈ FFT(VectorField(g, (u_out_fun, v_out_fun, w_out_fun), 2π)).*2
 end

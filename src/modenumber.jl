@@ -17,3 +17,10 @@ function _convert_modenumber(n::ModeNumber, Nt)
     end
     return _nz, _nt, do_conj
 end
+
+# TODO: loop macro with this signature
+# @loop_modes begin
+#     for ny in 1:Ny
+
+#     end
+# end
