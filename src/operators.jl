@@ -35,8 +35,8 @@ function (eq::CouettePrimitiveNSE)(::Real,
     out .*= 1/eq.Re
 
     # compute derivatives
-    ddy!(dudy, u)
-    ddz!(dudz, u)
+    ddx2!(dudy, u)
+    ddx3!(dudz, u)
 
     # advection term
     eq.plans(U, u)

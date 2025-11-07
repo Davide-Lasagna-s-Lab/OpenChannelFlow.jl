@@ -18,10 +18,10 @@
 
     # test values of derivatives
     u = FFT(PCField(g, u_fun, 2π))
-    @test OpenChannelFlow.ddy!(      SCField(g), u) ≈ FFT(PCField(g, dudy_fun,   2π))
-    @test OpenChannelFlow.d2dy2!(    SCField(g), u) ≈ FFT(PCField(g, d2udy2_fun, 2π))
-    @test OpenChannelFlow.ddz!(      SCField(g), u) ≈ FFT(PCField(g, dudz_fun,   2π))
-    @test OpenChannelFlow.d2dz2!(    SCField(g), u) ≈ FFT(PCField(g, d2udz2_fun, 2π))
+    @test OpenChannelFlow.ddx2!(     SCField(g), u) ≈ FFT(PCField(g, dudy_fun,   2π))
+    @test OpenChannelFlow.d2dx22!(   SCField(g), u) ≈ FFT(PCField(g, d2udy2_fun, 2π))
+    @test OpenChannelFlow.ddx3!(     SCField(g), u) ≈ FFT(PCField(g, dudz_fun,   2π))
+    @test OpenChannelFlow.d2dx32!(   SCField(g), u) ≈ FFT(PCField(g, d2udz2_fun, 2π))
     @test OpenChannelFlow.laplacian!(SCField(g), u) ≈ FFT(PCField(g, lapl_fun,   2π))
     @test                 dds!(      SCField(g), u) ≈ FFT(PCField(g, duds_fun,   2π))
 
@@ -40,10 +40,10 @@
 
     # test allocation
     fun(dx, a, b) = @allocated dx(a, b)
-    @test fun(OpenChannelFlow.ddy!,       SCField(g), u) == 0
-    @test fun(OpenChannelFlow.d2dy2!,     SCField(g), u) == 0
-    @test fun(OpenChannelFlow.ddz!,       SCField(g), u) == 0
-    @test fun(OpenChannelFlow.d2dz2!,     SCField(g), u) == 0
+    @test fun(OpenChannelFlow.ddx2!,      SCField(g), u) == 0
+    @test fun(OpenChannelFlow.d2dx22!,    SCField(g), u) == 0
+    @test fun(OpenChannelFlow.ddx3!,      SCField(g), u) == 0
+    @test fun(OpenChannelFlow.d2dx32!,    SCField(g), u) == 0
     @test fun(OpenChannelFlow.laplacian!, SCField(g), u) == 0
     @test fun(                dds!,       SCField(g), u) == 0
     @test fun(                dds!,       similar(a), a) == 0

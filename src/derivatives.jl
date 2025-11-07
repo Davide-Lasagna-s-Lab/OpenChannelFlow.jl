@@ -1,80 +1,47 @@
 # Derivative methods for flow fields.
 
-# ------------------- #
-# spatial derivatives #
-# ------------------- #
-ddy!(out::F,   u::F) where {F<:Union{PCField, SCField}} = mul!(out, grid(u).Dy,  u)
-function ddy!(out::VectorField{N, F}, u::VectorField{N, F}) where {N, F<:Union{PCField, SCField}}
-    for n in 1:N
-        ddy!(out[n], u[n])
-    end
-    return out
+# ------------------------ #
+# scalar field derivatives #
+# ------------------------ #
+function ddx1!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
+    throw(error("not implemented"))
 end
 
-d2dy2!(out::F, u::F) where {F<:Union{PCField, SCField}} = mul!(out, grid(u).Dy2, u)
-function d2dy2!(out::VectorField{N, F}, u::VectorField{N, F}) where {N, F<:Union{PCField, SCField}}
-    for n in 1:N
-        d2dy2!(out[n], u[n])
-    end
-    return out
+function d2dx12!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
+    throw(error("not implemented"))
 end
 
-function ddz!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
+ddx2!(out::F, u::F) where {F<:Union{PCField, SCField}} = mul!(out, grid(u).Dy,  u)
+d2dx22!(out::F, u::F) where {F<:Union{PCField, SCField}} = mul!(out, grid(u).Dy2, u)
+
+function ddx3!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
     β = grid(u).β
     for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
         @inbounds out[ny, ModeNumber(nz, nt)] = 1im*nz*β*u[ny, ModeNumber(nz, nt)]
     end
     return out
 end
-function ddz!(out::VectorField{N, F}, u::VectorField{N, F}) where {N, F<:SCField}
-    for n in 1:N
-        ddz!(out[n], u[n])
-    end
-    return out
-end
 
-function d2dz2!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
+function d2dx32!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
     β = grid(u).β
     for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
         @inbounds out[ny, ModeNumber(nz, nt)] = -(nz*β)^2*u[ny, ModeNumber(nz, nt)]
     end
     return out
 end
-function d2dz2!(out::VectorField{N, F}, u::VectorField{N, F}) where {N, F<:SCField}
-    for n in 1:N
-        d2dz2!(out[n], u[n])
-    end
-    return out
-end
 
 function laplacian!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
     β = grid(u).β
-    d2dy2!(out, u)
+    d2dx22!(out, u)
     for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
         @inbounds out[ny, ModeNumber(nz, nt)] += -(nz*β)^2*u[ny, ModeNumber(nz, nt)]
     end
     return out
 end
-function laplacian!(out::VectorField{N, F}, u::VectorField{N, F}) where {N, F<:SCField}
-    for n in 1:N
-        laplacian!(out[n], u[n])
-    end
-    return out
-end
 
-
-# --------------- #
-# time derivative #
-# --------------- #
 function dds!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
     for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
         @inbounds out[ny, ModeNumber(nz, nt)] = 1im*nt*u[ny, ModeNumber(nz, nt)]
-    end
-    return out
-end
-function dds!(out::VectorField{N, F}, u::VectorField{N, F}) where {N, F<:SCField}
-    for n in 1:N
-        dds!(out[n], u[n])
     end
     return out
 end
@@ -83,4 +50,19 @@ function dds!(out::ProjectedField{G, M}, a::ProjectedField{G, M}) where {S, G<:C
         @inbounds out[m, ModeNumber(nz, nt)] = 1im*nt*a[m, ModeNumber(nz, nt)]
     end
     return out
+end
+
+
+# ------------------------ #
+# vector field derivatives #
+# ------------------------ #
+for name in [:ddx1!, :d2dx12!, :ddx2!, :d2dx22!, :ddx3!, :d2dx32!, :laplacian!, :dds!]
+    @eval begin
+        function $name(out::VectorField{N}, u::VectorField{N}) where {N}
+            for n in 1:N
+                $name(out[n], u[n])
+            end
+            return out
+        end
+    end
 end
