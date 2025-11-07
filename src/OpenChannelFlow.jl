@@ -12,7 +12,7 @@ export FFT, IFFT
 export dds!
 export shift!
 export dot, norm, normdiff, minnormdiff
-export NonlinearOperator
+export CouettePrimitiveNSE
 
 include("grid.jl")
 include("modenumber.jl")
@@ -26,6 +26,5 @@ include("derivatives.jl")
 include("shifts.jl")
 include("norms.jl")
 include("operators.jl")
-include("nonlinear.jl")
 
 end
