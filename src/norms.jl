@@ -1,5 +1,7 @@
 # Norm definitions and special scaling for channel flow fields.
 
+# TODO: replace modified loop macro to account for symmetry effect
+
 # ----------------------- #
 # standard inner products #
 # ----------------------- #

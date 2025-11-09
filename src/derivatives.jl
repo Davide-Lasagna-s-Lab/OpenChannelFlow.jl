@@ -16,16 +16,16 @@ d2dx22!(out::F, u::F) where {F<:Union{PCField, SCField}} = mul!(out, grid(u).Dy2
 
 function ddx3!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
     β = grid(u).β
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
-        @inbounds out[ny, ModeNumber(nz, nt)] = 1im*nz*β*u[ny, ModeNumber(nz, nt)]
+    @loop_modes S[3] S[2] for ny in 1:S[1]
+        @inbounds out[ny, _nz, _nt] = 1im*nz*β*u[ny, _nz, _nt]
     end
     return out
 end
 
 function d2dx32!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
     β = grid(u).β
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
-        @inbounds out[ny, ModeNumber(nz, nt)] = -(nz*β)^2*u[ny, ModeNumber(nz, nt)]
+    @loop_modes S[3] S[2] for ny in 1:S[1]
+        @inbounds out[ny, _nz, _nt] = -(nz*β)^2*u[ny, _nz, _nt]
     end
     return out
 end
@@ -33,21 +33,21 @@ end
 function laplacian!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
     β = grid(u).β
     d2dx22!(out, u)
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
-        @inbounds out[ny, ModeNumber(nz, nt)] += -(nz*β)^2*u[ny, ModeNumber(nz, nt)]
+    @loop_modes S[3] S[2] for ny in 1:S[1]
+        @inbounds out[ny, _nz, _nt] += -(nz*β)^2*u[ny, _nz, _nt]
     end
     return out
 end
 
 function dds!(out::SCField{G}, u::SCField{G}) where {S, G<:ChannelGrid{S}}
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), ny in 1:S[1]
-        @inbounds out[ny, ModeNumber(nz, nt)] = 1im*nt*u[ny, ModeNumber(nz, nt)]
+    @loop_modes S[3] S[2] for ny in 1:S[1]
+        @inbounds out[ny, _nz, _nt] = 1im*nt*u[ny, _nz, _nt]
     end
     return out
 end
 function dds!(out::ProjectedField{G, M}, a::ProjectedField{G, M}) where {S, G<:ChannelGrid{S}, M}
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in 0:(S[2] >> 1), m in 1:M
-        @inbounds out[m, ModeNumber(nz, nt)] = 1im*nt*a[m, ModeNumber(nz, nt)]
+    @loop_modes S[3] S[2] for m in 1:M
+        @inbounds out[m, _nz, _nt] = 1im*nt*a[m, _nz, _nt]
     end
     return out
 end
