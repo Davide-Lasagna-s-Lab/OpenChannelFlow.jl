@@ -1,4 +1,4 @@
-@testset "Couette primitive operator            " begin
+@testset "Couette primitive NSE                 " begin
     # define functions
     u_fun(y, z, t)      = y + (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
     dudy_fun(y, z, t)   = 1 - 2*y*exp(cos(5.8*z))*atan(sin(t))
@@ -47,7 +47,11 @@
     u = FFT(VectorField(g, (u_fun, v_fun, w_fun), 2π))
     exact = FFT(VectorField(g, (u_out_fun, v_out_fun, w_out_fun), 2π))
     @test op(0.0, u, similar(u)) ≈ exact
-    # u[1][:, 1, 1] .-= g.y
-    # a = project(u, Ψ)
-    # @test op(similar(a), a) ≈ project(exact, Ψ)
+    u[1][:, 1, 1] .-= g.y
+    a = project(u, Ψ)
+    @test op(similar(a), a) ≈ project(exact, Ψ)
+end
+
+@testset "Couette primitive linearised NSE      " begin
+
 end

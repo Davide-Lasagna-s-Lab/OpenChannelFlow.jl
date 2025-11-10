@@ -25,6 +25,7 @@ include("broadcasting.jl")
 include("derivatives.jl")
 include("shifts.jl")
 include("norms.jl")
-include("operators.jl")
+include("couetteprimitive.jl")
+include("couettewallnormal.jl")
 
 end
