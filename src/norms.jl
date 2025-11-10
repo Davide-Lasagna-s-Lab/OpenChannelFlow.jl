@@ -1,14 +1,15 @@
 # Norm definitions and special scaling for channel flow fields.
 
-# TODO: replace modified loop macro to account for symmetry effect
-
 # ----------------------- #
 # standard inner products #
 # ----------------------- #
 function LinearAlgebra.dot(u::SCField{G}, v::SCField{G}) where {S, G<:ChannelGrid{S}}
     sum = 0.0
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in -(S[2] >> 1):(S[2] >> 1), ny in 1:S[1]
-        @inbounds sum += grid(u).ws[ny]*real(dot(u[ny, ModeNumber(nz, nt)], v[ny, ModeNumber(nz, nt)]))
+    @loop_nt S[3] for ny in 1:S[1]
+        @inbounds sum += grid(u).ws[ny]*real(dot(u[ny, 1, _nt], v[ny, 1, _nt]))
+    end
+    @loop_nt S[3] for _nz in 2:(S[2] >> 1) + 1, ny in 1:S[1]
+        @inbounds sum += 2*grid(u).ws[ny]*real(dot(u[ny, _nz, _nt], v[ny, _nz, _nt]))
     end
     return sum/2
 end
@@ -23,8 +24,11 @@ end
 
 function LinearAlgebra.dot(a::ProjectedField{G, M}, b::ProjectedField{G, M}) where {S, G<:ChannelGrid{S}, M}
     sum = 0.0
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in -(S[2] >> 1):(S[2] >> 1), m in 1:M
-        @inbounds sum += real(dot(a[m, ModeNumber(nz, nt)], b[m, ModeNumber(nz, nt)]))
+    @loop_nt S[3] for m in 1:M
+        @inbounds sum += real(dot(a[m, 1, _nt], b[m, 1, _nt]))
+    end
+    @loop_nt S[3] for _nz in 2:(S[2] >> 1) + 1, m in 1:M
+        @inbounds sum += 2*real(dot(a[m, _nz, _nt], b[m, _nz, _nt]))
     end
     return sum/2
 end
@@ -39,8 +43,11 @@ function normdiff(u::SCField{G}, v::SCField{G}, shifts=(0, 0), tmp::SCField{G}=z
     sum = 0.0
     tmp .= v
     shift!(tmp, shifts)
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in -(S[2] >> 1):(S[2] >> 1), ny in 1:S[1]
-        @inbounds sum += grid(u).ws[ny]*abs2(u[ny, ModeNumber(nz, nt)] - tmp[ny, ModeNumber(nz, nt)])
+    @loop_nt S[3] for ny in 1:S[1]
+        @inbounds sum += grid(u).ws[ny]*abs2(u[ny, 1, _nt] - tmp[ny, 1, _nt])
+    end
+    @loop_nt S[3] for _nz in 2:(S[2] >> 1) + 1, ny in 1:S[1]
+        @inbounds sum += 2*grid(u).ws[ny]*abs2(u[ny, _nz, _nt] - tmp[ny, _nz, _nt])
     end
     return sqrt(sum/2)
 end
@@ -57,8 +64,11 @@ function normdiff(a::ProjectedField{G, M}, b::ProjectedField{G, M}, shifts=(0, 0
     sum = 0.0
     tmp .= b
     shift!(tmp, shifts)
-    for nt in -(S[3] >> 1):(S[3] >> 1), nz in -(S[2] >> 1):(S[2] >> 1), m in 1:M
-        @inbounds sum += abs2(a[m, ModeNumber(nz, nt)] - tmp[m, ModeNumber(nz, nt)])
+    @loop_nt S[3] for m in 1:M
+        @inbounds sum += abs2(a[m, 1, _nt] - tmp[m, 1, _nt])
+    end
+    @loop_nt S[3] for _nz in 2:(S[2] >> 1) + 1, m in 1:M
+        @inbounds sum += 2*abs2(a[m, _nz, _nt] - tmp[m, _nz, _nt])
     end
     return sqrt(sum/2)
 end
