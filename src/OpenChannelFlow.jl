@@ -12,7 +12,7 @@ export FFT, IFFT
 export dds!
 export shift!
 export dot, norm, normdiff, minnormdiff
-export CouettePrimitiveNSE
+export CouettePrimitiveNSE, CouettePrimitiveLNSE
 
 include("grid.jl")
 include("modenumber.jl")
