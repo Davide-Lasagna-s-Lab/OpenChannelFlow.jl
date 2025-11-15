@@ -13,6 +13,7 @@ export dds!
 export shift!
 export dot, norm, normdiff, minnormdiff
 export CouettePrimitiveNSE, CouettePrimitiveLNSE
+export ProjectedNSE
 
 include("grid.jl")
 include("modenumber.jl")
@@ -26,6 +27,7 @@ include("derivatives.jl")
 include("shifts.jl")
 include("norms.jl")
 include("couetteprimitive.jl")
+include("projectednse.jl")
 include("couettewallnormal.jl")
 
 end
