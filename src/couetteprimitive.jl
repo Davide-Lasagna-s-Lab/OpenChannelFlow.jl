@@ -1,39 +1,39 @@
 # Operators for the primitive formulation of the Navier-Stokes equation for
 # Couette type flows.
 
-# TODO: create global constructor that allows re-use of cache objects
-
-# types of operation for linear operator
-struct TangentMode end
-struct AdjointMode end
-operator_mode(adjoint) = adjoint ? AdjointMode : TangentMode
-
-
 # ---------------------- #
 # navier-stokes operator #
 # ---------------------- #
+# TODO: modify inner-constructor to take size of cache arrays so that it is simpler to construct for the user if desired
 mutable struct CouettePrimitiveNSE{T, SF, PF, FFT}
               Re::T
               Ro::T
-      const base::Vector{T}
      const plans::FFT
-    const scache::NTuple{4, VectorField{3, SF}}
-    const pcache::NTuple{3, VectorField{3, PF}}
+    const scache::Vector{VectorField{3, SF}}
+    const pcache::Vector{VectorField{3, PF}}
 
-    function CouettePrimitiveNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, base::Vector{T}=g.y, flags=FFTW.EXHAUSTIVE) where {T}
-        plans = FFTPlans(g, T, dealias=true, flags=flags)
-        scache = ntuple(_->VectorField(g, T, N=3, type=SCField), 4)
-        pcache = ntuple(_->VectorField(g, T, N=3, type=PCField, dealias=true), 3)
-        new{T, eltype(scache[1]), eltype(pcache[1]), typeof(plans)}(T(Re), T(Ro), base, plans, scache, pcache)
+    function CouettePrimitiveNSE(Re::T,
+                                 Ro::T,
+                              plans::FFT,
+                             scache::Vector{VectorField{3, SF}},
+                             pcache::Vector{VectorField{3, PF}}) where {T, FFT, SF, PF}
+        new{T, SF, PF, FFT}(Re, Ro, plans, scache, pcache)
     end
+end
+
+function CouettePrimitiveNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, flags=FFTW.EXHAUSTIVE) where {T}
+    plans = FFTPlans(g, T, dealias=true, flags=flags)
+    scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:2]
+    pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:3]
+    CouettePrimitiveNSE(T(Re), T(Ro), plans, scache, pcache)
 end
 
 function (eq::CouettePrimitiveNSE)(::Real,
                                   u::VectorField{3, <:SCField{G}},
                                 out::VectorField{3, <:SCField{G}}) where {G}
     # aliases
-    dudy = eq.scache[3]
-    dudz = eq.scache[4]
+    dudy = eq.scache[1]
+    dudz = eq.scache[2]
     U    = eq.pcache[1]
     dUdy = eq.pcache[2]
     dUdz = eq.pcache[3]
@@ -51,9 +51,9 @@ function (eq::CouettePrimitiveNSE)(::Real,
     eq.plans(dUdy, dudy)
     eq.plans(dUdz, dudz)
     for n in 1:3
-        @. dUdy[n] = U[2]*dUdy[n] + U[3]*dUdz[n] # overwrite field to save memory
+        @. dUdy[n] = -U[2]*dUdy[n] - U[3]*dUdz[n] # overwrite field to save memory
     end
-    out .-= eq.plans(dudy, dUdy) # overwrite field to save memory
+    eq.plans(out, dUdy, Val(false)) # add the result to the output
 
     # coriolis term
     @. out[1] += eq.Ro*u[2]
@@ -62,59 +62,70 @@ function (eq::CouettePrimitiveNSE)(::Real,
     return out
 end
 
-function (eq::CouettePrimitiveNSE)(out::ProjectedField{G, M},
-                                     a::ProjectedField{G, M}) where {G, M}
-    # aliases
-    u   = eq.scache[1]
-    N_u = eq.scache[2]
-
-    # expand coefficients into spectral field
-    expand!(u, a)
-    u[1][:, 1, 1] .+= eq.base
-
-    # operator action
-    eq(0, u, N_u)
-
-    # project result back onto basis
-    project!(out, N_u)
-
-    return out
-end
-
 
 # --------------------------------- #
 # linearised navier-stokes operator #
 # --------------------------------- #
-mutable struct CouettePrimitiveLNSE{MODE, T, SF, PF, FFT}
+mutable struct CouettePrimitiveLNSE{T, SF, PF, FFT}
               Re::T
               Ro::T
-      const base::Vector{T}
      const plans::FFT
-    const scache::NTuple{7, VectorField{3, SF}}
-    const pcache::NTuple{6, VectorField{3, PF}}
+    const scache::Vector{VectorField{3, SF}}
+    const pcache::Vector{VectorField{3, PF}}
 
-    function CouettePrimitiveLNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, adjoint::Bool=false, base::Vector{T}=g.y, flags=FFTW.EXHAUSTIVE) where {T}
-        plans = FFTPlans(g, T, dealias=true, flags=flags)
-        scache = ntuple(_->VectorField(g, T, N=3, type=SCField), 7)
-        pcache = ntuple(_->VectorField(g, T, N=3, type=PCField, dealias=true), 6)
-        mode = operator_mode(adjoint)
-        new{mode, T, eltype(scache[1]), eltype(pcache[1]), typeof(plans)}(T(Re), T(Ro), base, plans, scache, pcache)
+    function CouettePrimitiveLNSE(Re::T,
+                                  Ro::T,
+                               plans::FFT,
+                              scache::Vector{VectorField{3, SF}},
+                              pcache::Vector{VectorField{3, PF}}) where {T, FFT, SF, PF}
+        new{T, SF, PF, FFT}(Re, Ro, plans, scache, pcache)
     end
 end
 
-function (eq::CouettePrimitiveLNSE{TangentMode})(::Real,
-                                                u::VectorField{3, <:SCField{G}},
-                                                v::VectorField{3, <:SCField{G}},
-                                              out::VectorField{3, <:SCField{G}}) where {G}
+function CouettePrimitiveLNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, flags=FFTW.EXHAUSTIVE) where {T}
+    plans = FFTPlans(g, T, dealias=true, flags=flags)
+    scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:4]
+    pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:6]
+    CouettePrimitiveLNSE(T(Re), T(Ro), plans, scache, pcache)
+end
+
+function (eq::CouettePrimitiveLNSE)(::Real,
+                                   u::VectorField{3, <:SCField{G}},
+                                   v::VectorField{3, <:SCField{G}},
+                                 out::VectorField{3, <:SCField{G}},
+                             adjoint::Bool=false) where {G}
     # aliases
-    dudy = eq.scache[4]
-    dudz = eq.scache[5]
-    dvdy = eq.scache[6]
-    dvdz = eq.scache[7]
+    dudy = eq.scache[1]
+    dudz = eq.scache[2]
     U    = eq.pcache[1]
-    V    = eq.pcache[2]
-    dUdy = eq.pcache[3]
-    dUdz = eq.pcache[4]
+    dUdz = eq.pcache[3]
+
+    # compute base derivatives
+    ddx2!(dudy, u)
+    ddx3!(dudz, u)
+
+    # transform base field
+    eq.plans(U, u)
+    eq.plans(dUdz, dudz)
+
+    # compute the rest
+    eq(0, v, out, Val(adjoint))
+
+    return out
+end
+
+function (eq::CouettePrimitiveLNSE)(::Real,
+                                   v::VectorField{3, <:SCField{G}},
+                                 out::VectorField{3, <:SCField{G}},
+                                    ::Val{false}) where {G}
+    # aliases
+    dudy = eq.scache[1]
+    dvdy = eq.scache[3]
+    dvdz = eq.scache[4]
+    U    = eq.pcache[1]
+    dUdy = eq.pcache[2]
+    dUdz = eq.pcache[3]
+    V    = eq.pcache[4]
     dVdy = eq.pcache[5]
     dVdz = eq.pcache[6]
 
@@ -123,21 +134,17 @@ function (eq::CouettePrimitiveLNSE{TangentMode})(::Real,
     out .*= 1/eq.Re
 
     # compute derivatives
-    ddx2!(dudy, u)
-    ddx3!(dudz, u)
     ddx2!(dvdy, v)
     ddx3!(dvdz, v)
 
     # advection term
-    eq.plans(U, u)
     eq.plans(V, v)
     eq.plans(dUdy, dudy)
-    eq.plans(dUdz, dudz)
     eq.plans(dVdy, dvdy)
     eq.plans(dVdz, dvdz)
-    for i in 1:3
-        @. dVdy[i]  = U[2]*dVdy[i] + U[3]*dVdz[i] # overwrite field to save memory
-        @. dVdy[i] += V[2]*dUdy[i] + V[3]*dUdz[i] # overwrite field to save memory
+    for n in 1:3
+        @. dVdy[n]  = U[2]*dVdy[n] + U[3]*dVdz[n] # overwrite field to save memory
+        @. dVdy[n] += V[2]*dUdy[n] + V[3]*dUdz[n] # overwrite field to save memory
     end
     eq.plans(dvdy, dVdy) # overwrite field to save memory
     @. out -= dvdy
@@ -149,19 +156,18 @@ function (eq::CouettePrimitiveLNSE{TangentMode})(::Real,
     return out
 end
 
-function (eq::CouettePrimitiveLNSE{AdjointMode})(::Real,
-                                                u::VectorField{3, <:SCField{G}},
-                                                v::VectorField{3, <:SCField{G}},
-                                              out::VectorField{3, <:SCField{G}}) where {G}
+function (eq::CouettePrimitiveLNSE)(::Real,
+                                   v::VectorField{3, <:SCField{G}},
+                                 out::VectorField{3, <:SCField{G}},
+                                    ::Val{true}) where {G}
     # aliases
-    dudy = eq.scache[4]
-    dudz = eq.scache[5]
-    dvdy = eq.scache[6]
-    dvdz = eq.scache[7]
+    dudy = eq.scache[1]
+    dvdy = eq.scache[3]
+    dvdz = eq.scache[4]
     U    = eq.pcache[1]
-    V    = eq.pcache[2]
-    dUdy = eq.pcache[3]
-    dUdz = eq.pcache[4]
+    dUdy = eq.pcache[2]
+    dUdz = eq.pcache[3]
+    V    = eq.pcache[4]
     dVdy = eq.pcache[5]
     dVdz = eq.pcache[6]
 
@@ -170,25 +176,21 @@ function (eq::CouettePrimitiveLNSE{AdjointMode})(::Real,
     out .*= 1/eq.Re
 
     # compute derivatives
-    ddx2!(dudy, u)
-    ddx3!(dudz, u)
     ddx2!(dvdy, v)
     ddx3!(dvdz, v)
 
     # advection term
-    eq.plans(U, u)
     eq.plans(V, v)
     eq.plans(dUdy, dudy)
-    eq.plans(dUdz, dudz)
     eq.plans(dVdy, dvdy)
     eq.plans(dVdz, dvdz)
-    for i in 1:3
-        @. dVdy[i] = U[2]*dVdy[i] + U[3]*dVdz[i] # overwrite field to save memory
+    for n in 1:3
+        @. dVdy[n] = U[2]*dVdy[n] + U[3]*dVdz[n] # overwrite field to save memory
     end
     dVdz .*= 0.0
-    for j in 1:3
-        @. dVdz[2] += V[j]*dUdy[j] # overwrite field to save memory
-        @. dVdz[3] += V[j]*dUdz[j] # overwrite field to save memory
+    for i in 1:3
+        @. dVdz[2] += V[i]*dUdy[i] # overwrite field to save memory
+        @. dVdz[3] += V[i]*dUdz[i] # overwrite field to save memory
     end
     eq.plans(dvdy, dVdy) # overwrite field to save memory
     eq.plans(dvdz, dVdz) # overwrite field to save memory
@@ -197,28 +199,6 @@ function (eq::CouettePrimitiveLNSE{AdjointMode})(::Real,
     # coriolis term
     @. out[1] -= eq.Ro*v[2]
     @. out[2] += eq.Ro*v[1]
-
-    return out
-end
-
-function (eq::CouettePrimitiveLNSE)(out::ProjectedField{G, M},
-                                      a::ProjectedField{G, M},
-                                      b::ProjectedField{G, M}) where {G, M}
-    # aliases
-    u    = eq.scache[1]
-    v    = eq.scache[2]
-    M_uv = eq.scache[3]
-
-    # expand coefficients into spectral fields
-    expand!(u, a)
-    expand!(v, b)
-    u[1][:, 1, 1] .+= eq.base
-
-    # operator action
-    eq(0, u, v, M_uv)
-
-    # project result back onto basis
-    project!(out, M_uv)
 
     return out
 end
