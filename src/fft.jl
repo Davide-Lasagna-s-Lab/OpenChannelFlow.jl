@@ -40,6 +40,14 @@ function (f::FFTPlans{G, T, true})(û::SCField{G, T}, u::PCField{G, T}) where {
     return û
 end
 
+# special method that adds the result to the output rather than overwriting
+function (f::FFTPlans{G, T, true})(û::SCField{G, T}, u::PCField{G, T}, ::Val{false}) where {G, T}
+    FFTW.unsafe_execute!(f.plan, parent(u), f.spectral_cache)
+    f.spectral_cache .*= 1/prod(size(u)[2:3])
+    copy_add_from_padded!(parent(û), f.spectral_cache)
+    return û
+end
+
 function (f::FFTPlans{G, T, false})(û::SCField{G, T}, u::PCField{G, T}) where {G, T}
     FFTW.unsafe_execute!(f.plan, parent(u), f.spectral_cache)
     parent(û) .= f.spectral_cache./prod(size(u)[2:3])
@@ -49,6 +57,13 @@ end
 function (f::FFTPlans)(û::VectorField{N, S}, u::VectorField{N, P}) where {N, S<:SCField, P<:PCField}
     for n in 1:N
         f(û[n], u[n])
+    end
+    return û
+end
+
+function (f::FFTPlans)(û::VectorField{N, S}, u::VectorField{N, P}, ::Val{false}) where {N, S<:SCField, P<:PCField}
+    for n in 1:N
+        f(û[n], u[n], Val(false))
     end
     return û
 end
@@ -119,14 +134,14 @@ function copy_to_padded!(upad::Array{Complex{T}}, u::Array{Complex{T}}) where {T
     Nt_pad = size(upad, 3)
     if Nt > 1
         if Nt % 2 == 0
-            @views copyto!(upad[:, 1:Nz, 1:(((Nt - 1) >> 1) + 1)], u[:, :, 1:(((Nt - 1) >> 1) + 1)])
-            @views copyto!(upad[:, 1:Nz, (((Nt - 1) >> 1) + 2 + Nt_pad - Nt):Nt_pad], u[:, :, (((Nt - 1) >> 1) + 2):Nt])
+            @views upad[:, 1:Nz, 1:(((Nt - 1) >> 1) + 1)]                    .= u[:, :, 1:(((Nt - 1) >> 1) + 1)]
+            @views upad[:, 1:Nz, (((Nt - 1) >> 1) + 2 + Nt_pad - Nt):Nt_pad] .= u[:, :, (((Nt - 1) >> 1) + 2):Nt]
         else
-            @views copyto!(upad[:, 1:Nz, 1:(((Nt - 1) >> 1) + 1)], u[:, :, 1:(((Nt - 1) >> 1) + 1)])
-            @views copyto!(upad[:, 1:Nz, (((Nt - 1) >> 1) + 2 + Nt_pad - Nt):Nt_pad], u[:, :, (((Nt - 1) >> 1) + 2):Nt])
+            @views upad[:, 1:Nz, 1:(((Nt - 1) >> 1) + 1)]                    .= u[:, :, 1:(((Nt - 1) >> 1) + 1)]
+            @views upad[:, 1:Nz, (((Nt - 1) >> 1) + 2 + Nt_pad - Nt):Nt_pad] .= u[:, :, (((Nt - 1) >> 1) + 2):Nt]
         end
     else
-        @views copyto!(upad[:, 1:Nz, 1], u[:, :, 1])
+        @views upad[:, 1:Nz, 1] .= u[:, :, 1]
     end
     return upad
 end
@@ -137,14 +152,32 @@ function copy_from_padded!(u::Array{Complex{T}}, upad::Array{Complex{T}}) where 
     if Nt > 1
         if Nt % 2 == 0
             # FIXME: doesn't work for even grid numbers, should figure out why at some point
-            @views copyto!(u[:, :, 1:((Nt >> 1) + 1)], upad[:, 1:Nz, 1:((Nt >> 1) + 1)])
-            @views copyto!(u[:, :, ((Nt >> 1) + 2):Nt], upad[:, 1:Nz, ((Nt >> 1) + 2 + Nt_pad - Nt):Nt_pad])
+            @views u[:, :, 1:((Nt >> 1) + 1)]  .= upad[:, 1:Nz, 1:((Nt >> 1) + 1)]
+            @views u[:, :, ((Nt >> 1) + 2):Nt] .= upad[:, 1:Nz, ((Nt >> 1) + 2 + Nt_pad - Nt):Nt_pad]
         else
-            @views copyto!(u[:, :, 1:((Nt >> 1) + 1)], upad[:, 1:Nz, 1:((Nt >> 1) + 1)])
-            @views copyto!(u[:, :, ((Nt >> 1) + 2):Nt], upad[:, 1:Nz, ((Nt >> 1) + 2 + Nt_pad - Nt):Nt_pad])
+            @views u[:, :, 1:((Nt >> 1) + 1)]  .= upad[:, 1:Nz, 1:((Nt >> 1) + 1)]
+            @views u[:, :, ((Nt >> 1) + 2):Nt] .= upad[:, 1:Nz, ((Nt >> 1) + 2 + Nt_pad - Nt):Nt_pad]
         end
     else
-        @views copyto!(u[:, :, 1], upad[:, 1:Nz, 1])
+        @views u[:, :, 1] .= upad[:, 1:Nz, 1]
+    end
+    return u
+end
+
+function copy_add_from_padded!(u::Array{Complex{T}}, upad::Array{Complex{T}}) where {T}
+    Nz, Nt = size(u)[2:3]
+    Nt_pad = size(upad, 3)
+    if Nt > 1
+        if Nt % 2 == 0
+            # FIXME: doesn't work for even grid numbers, should figure out why at some point
+            @views u[:, :, 1:((Nt >> 1) + 1)]  .+= upad[:, 1:Nz, 1:((Nt >> 1) + 1)]
+            @views u[:, :, ((Nt >> 1) + 2):Nt] .+= upad[:, 1:Nz, ((Nt >> 1) + 2 + Nt_pad - Nt):Nt_pad]
+        else
+            @views u[:, :, 1:((Nt >> 1) + 1)]  .+= upad[:, 1:Nz, 1:((Nt >> 1) + 1)]
+            @views u[:, :, ((Nt >> 1) + 2):Nt] .+= upad[:, 1:Nz, ((Nt >> 1) + 2 + Nt_pad - Nt):Nt_pad]
+        end
+    else
+        @views u[:, :, 1] .= upad[:, 1:Nz, 1]
     end
     return u
 end

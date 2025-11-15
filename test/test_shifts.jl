@@ -1,12 +1,12 @@
 @testset "Field symmetry shifts                 " begin
     # define functions
     sz = 2π*rand(); st = rand()
-    u_fun       = ((y, z, t)->y + (1 - y^2)*cos(z)*cos(t),
-                   (y, z, t)->-(π/2)*cos(π*y/2)^2*sin(z)*sin(t),
-                   (y, z, t)->(π/2)*sin(π*y)*cos(z)*sin(t))
-    u_shift_fun = ((y, z, t)->y + (1 - y^2)*cos(z + sz)*cos(t + st*2π),
-                   (y, z, t)->-(π/2)*cos(π*y/2)^2*sin(z + sz)*sin(t + st*2π),
-                   (y, z, t)->(π/2)*sin(π*y)*cos(z + sz)*sin(t + st*2π))
+    u_funs       = ((y, z, t)->y + (1 - y^2)*cos(z)*cos(t),
+                    (y, z, t)->-(π/2)*cos(π*y/2)^2*sin(z)*sin(t),
+                    (y, z, t)->(π/2)*sin(π*y)*cos(z)*sin(t))
+    u_shift_funs = ((y, z, t)->y + (1 - y^2)*cos(z + sz)*cos(t + st*2π),
+                    (y, z, t)->-(π/2)*cos(π*y/2)^2*sin(z + sz)*sin(t + st*2π),
+                    (y, z, t)->(π/2)*sin(π*y)*cos(z + sz)*sin(t + st*2π))
 
     # construct grid
     Ny = 16; Nz = 33; Nt = 33
@@ -29,8 +29,8 @@
     end
 
     # test shifts
-    u       = FFT(VectorField(g, u_fun,       2π))
-    u_shift = FFT(VectorField(g, u_shift_fun, 2π))
+    u       = FFT(VectorField(g, u_funs,       2π))
+    u_shift = FFT(VectorField(g, u_shift_funs, 2π))
     @test shift!(     u,  (0,  0))  === u
     @test shift!(copy(u), (sz, st)) ≈   u_shift atol=1e-12
     a       = project(u,       Ψ)

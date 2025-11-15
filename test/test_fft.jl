@@ -18,8 +18,9 @@
     ud = PCField(g, dealias=true)
 
     # test transforms
-    @test  plans(similar(U),  plans(u,  U)) ≈ U
-    @test plansd(similar(U), plansd(ud, U)) ≈ U
+    @test  plans(similar(U),  plans(u,  U))             ≈   U
+    @test plansd(similar(U), plansd(ud, U))             ≈   U
+    @test plansd(   copy(U), plansd(ud, U), Val(false)) ≈ 2*U
 
     # test allocations
     fun(plan, A, B) = @allocated plan(A, B)
