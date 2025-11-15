@@ -4,7 +4,6 @@
 # ---------------------- #
 # navier-stokes operator #
 # ---------------------- #
-# TODO: modify inner-constructor to take size of cache arrays so that it is simpler to construct for the user if desired
 mutable struct CouettePrimitiveNSE{T, SF, PF, FFT}
               Re::T
               Ro::T
@@ -12,21 +11,20 @@ mutable struct CouettePrimitiveNSE{T, SF, PF, FFT}
     const scache::Vector{VectorField{3, SF}}
     const pcache::Vector{VectorField{3, PF}}
 
-    function CouettePrimitiveNSE(Re::T,
-                                 Ro::T,
-                              plans::FFT,
-                             scache::Vector{VectorField{3, SF}},
-                             pcache::Vector{VectorField{3, PF}}) where {T, FFT, SF, PF}
-        new{T, SF, PF, FFT}(Re, Ro, plans, scache, pcache)
+    function CouettePrimitiveNSE(g::ChannelGrid,
+                                Re::T,
+                                Ro::T,
+                           nscache::Int,
+                           npcache::Int,
+                             flags) where {T}
+        plans = FFTPlans(g, T, dealias=true, flags=flags)
+        scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:nscache]
+        pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:npcache]
+        new{T, eltype(scache[1]), eltype(pcache[1]), typeof(plans)}(Re, Ro, plans, scache, pcache)
     end
 end
-
-function CouettePrimitiveNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, flags=FFTW.EXHAUSTIVE) where {T}
-    plans = FFTPlans(g, T, dealias=true, flags=flags)
-    scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:2]
-    pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:3]
-    CouettePrimitiveNSE(T(Re), T(Ro), plans, scache, pcache)
-end
+CouettePrimitiveNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, flags=FFTW.EXHAUSTIVE) where {T} =
+                                                                                    CouettePrimitiveNSE(g, T(Re), T(Ro), 2, 3, flags)
 
 function (eq::CouettePrimitiveNSE)(::Real,
                                   u::VectorField{3, <:SCField{G}},
@@ -73,21 +71,20 @@ mutable struct CouettePrimitiveLNSE{T, SF, PF, FFT}
     const scache::Vector{VectorField{3, SF}}
     const pcache::Vector{VectorField{3, PF}}
 
-    function CouettePrimitiveLNSE(Re::T,
-                                  Ro::T,
-                               plans::FFT,
-                              scache::Vector{VectorField{3, SF}},
-                              pcache::Vector{VectorField{3, PF}}) where {T, FFT, SF, PF}
-        new{T, SF, PF, FFT}(Re, Ro, plans, scache, pcache)
+    function CouettePrimitiveLNSE(g::ChannelGrid,
+                                 Re::T,
+                                 Ro::T,
+                            nscache::Int,
+                            npcache::Int,
+                              flags) where {T}
+        plans = FFTPlans(g, T, dealias=true, flags=flags)
+        scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:nscache]
+        pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:npcache]
+        new{T, eltype(scache[1]), eltype(pcache[1]), typeof(plans)}(Re, Ro, plans, scache, pcache)
     end
 end
-
-function CouettePrimitiveLNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, flags=FFTW.EXHAUSTIVE) where {T}
-    plans = FFTPlans(g, T, dealias=true, flags=flags)
-    scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:4]
-    pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:6]
-    CouettePrimitiveLNSE(T(Re), T(Ro), plans, scache, pcache)
-end
+CouettePrimitiveLNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, flags=FFTW.EXHAUSTIVE) where {T} =
+                                                                                    CouettePrimitiveLNSE(g, T(Re), T(Ro), 4, 6, flags)
 
 function (eq::CouettePrimitiveLNSE)(::Real,
                                    u::VectorField{3, <:SCField{G}},
