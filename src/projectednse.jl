@@ -9,7 +9,7 @@ struct ProjectedNSE{T, NSE, LNSE, SF}
     nl::NSE
     ln::LNSE
     base::Vector{T}
-    cache::NTuple{4, VectorField{3, SF}}
+    cache::NTuple{2, VectorField{3, SF}}
 
     function ProjectedNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, base::Vector{T}=g.y, flags=FFTW.EXHAUSTIVE) where {T}
         # construct operators
@@ -20,7 +20,7 @@ struct ProjectedNSE{T, NSE, LNSE, SF}
         ln = CouettePrimitiveLNSE(T(Re), T(Ro), plans, scache, pcache)
 
         # construct independent cache
-        cache = ntuple(_->VectorField(g, T, N=3, type=SCField), 4)
+        cache = ntuple(_->VectorField(g, T, N=3, type=SCField), 2)
 
         new{T, typeof(nl), typeof(ln), eltype(cache[1])}(nl, ln, base, cache)
     end
@@ -34,7 +34,7 @@ function (eq::ProjectedNSE)(out::ProjectedField{G, M},
                               a::ProjectedField{G, M}) where {G, M}
     # aliases
     u   = eq.cache[1]
-    N_u = eq.cache[3]
+    N_u = eq.cache[2]
 
     # expand coefficients into spectral field
     expand!(u, a)
@@ -53,8 +53,8 @@ function (eq::ProjectedNSE)(out::ProjectedField{G, M},
                                ::ProjectedField{G, M},
                               b::ProjectedField{G, M}) where {G, M}
     # aliases
-    v    = eq.cache[2]
-    M_uv = eq.cache[4]
+    v    = eq.cache[1]
+    M_uv = eq.cache[2]
 
     # expand coefficients into spectral fields
     expand!(v, b)

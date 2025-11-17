@@ -2,7 +2,7 @@ module OpenChannelFlow
 
 using FFTW, LinearAlgebra
 
-export ChannelGrid, points, growto
+export ChannelGrid, points, growto, get_fields
 export ModeNumber
 export SCField, grid
 export PCField
