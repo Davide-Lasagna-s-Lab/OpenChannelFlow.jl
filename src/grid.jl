@@ -19,3 +19,6 @@ points(g::ChannelGrid, T, S::NTuple{2, Int}) = (g.y, (0:(S[1] - 1))/(S[1])*(2π/
 
 # grow grid size
 growto(g::ChannelGrid, N::NTuple{2, Int}) = ChannelGrid(g.y, N..., g.β, g.Dy, g.Dy2, g.ws)
+
+# utility method to make mode generation easier with Resolvent.jl
+get_fields(g::ChannelGrid) = (g.Dy, g.Dy2, g.ws, g.β)
