@@ -1,16 +1,19 @@
 @testset "Mode number index conversion          " begin
+    Nx = 23 # Nx can be even or odd
+    Nz = 23 # Nz has to be odd
     Nt = 23 # Nt has to be odd
-    Nz = 23 # Nz can be even or odd
-    nzs = collect(0:(Nz >> 1) + 1)
+    nxs = collect(0:(Nx >> 1) + 1)
+    nzs = [collect(0:(Nz >> 1)); collect(-(Nt >> 1):-1)]
     nts = [collect(0:(Nt >> 1)); collect(-(Nt >> 1):-1)]
-    for _nz in 1:(Nz >> 1) + 1, _nt in 1:Nt
-        n = ModeNumber(nzs[_nz], nts[_nt])
-        @test OpenChannelFlow._convert_modenumber(n, Nt) == (_nz, _nt, false)
+    for _nx in 1:(Nx >> 1) + 1, _nz in 1:Nz, _nt in 1:Nt
+        n = ModeNumber(nxs[_nx], nzs[_nz], nts[_nt])
+        @test OpenChannelFlow._convert_modenumber(n, Nz, Nt) == (_nx, _nz, _nt, false)
     end
-    nzs = collect(0:-1:-(Nz >> 1))
+    nxs = collect(0:-1:-(Nx >> 1))
+    nzs = [[0]; collect(-1:-1:-(Nz >> 1)); collect((Nz >> 1:-1:1))]
     nts = [[0]; collect(-1:-1:-(Nt >> 1)); collect((Nt >> 1:-1:1))]
-    for _nz in 2:(Nz >> 1) + 1, _nt in 1:Nt
-        n = ModeNumber(nzs[_nz], nts[_nt])
-        @test OpenChannelFlow._convert_modenumber(n, Nt) == (_nz, _nt, true)
+    for _nx in 2:(Nx >> 1) + 1, _nz in 1:Nz, _nt in 1:Nt
+        n = ModeNumber(nxs[_nx], nzs[_nz], nts[_nt])
+        @test OpenChannelFlow._convert_modenumber(n, Nz, Nt) == (_nx, _nz, _nt, true)
     end
 end

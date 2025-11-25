@@ -30,22 +30,13 @@ Base.copy(q::VectorField{N}) where {N}                              = VectorFiel
 Base.zero(q::VectorField{N}) where {N}                              = VectorField([zero(q.elements[n]) for n in 1:N]...)
 
 
-# --------- #
-# operators #
-# --------- #
-function cross_k!(ku::VectorField{3, S}, u::VectorField{3, S}, mag::Float64) where {S}
-    @. ku[1] -= mag*u[2]
-    @. ku[2] += mag*u[1]
-end
-
-
 # --------------- #
 # utility methods #
 # --------------- #
 grid(u::VectorField) = grid(u[1])
 
-function growto(u::VectorField{L, <:SCField{G, T}}, N::NTuple{2, Int}) where {L, G, T}
-    v = VectorField(growto(grid(u), N), T, N=L, type=SCField)
+function growto(u::VectorField{L, <:SCField}, N::NTuple{3, Int}) where {L}
+    v = VectorField(growto(grid(u), N), N=L, type=SCField)
     for n in 1:L
         parent(v[n]) .= parent(growto(u[n], N))
     end

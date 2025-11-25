@@ -3,23 +3,24 @@
 struct FarazmandWeight{T<:Real}
     ω::T
     β::T
+    α::T
 end
-Base.getindex(A::FarazmandWeight, ::Int, nz::Int, nt::Int) = 1/(1 + (A.β*nz)^2 + (A.ω*nt)^2)
+Base.getindex(A::FarazmandWeight, nx::Int, nz::Int, nt::Int) = 1/(1 + (A.α*nx)^2 + (A.β*nz)^2 + (A.ω*nt)^2)
 
 function LinearAlgebra.mul!(a::ProjectedField{G, M, T}, A::FarazmandWeight{T}) where {S, G<:ChannelGrid{S}, M, T}
-    @loop_modes S[3] S[2] for m in 1:M
-        @inbounds a[m, _nz, _nt] *= A[m, nz, nt]
+    @loop_modes S[4] S[3] S[2] for m in 1:M
+        @inbounds a[m, _nx, _nz, _nt] *= A[nx, nz, nt]
     end
     return a
 end
 
 function LinearAlgebra.dot(a::ProjectedField{G, M, T}, A::FarazmandWeight{T}, b::ProjectedField{G, M, T}) where {S, G<:ChannelGrid{S}, M, T}
     sum = zero(T)
-    @loop_nt S[3] for m in 1:M
-        @inbounds sum += A[m, 0, nt]*real(dot(a[m, 1, _nt], b[m, 1, _nt]))
+    @loop_nznt S[4] S[3] for m in 1:M
+        @inbounds sum += A[0, nz, nt]*real(dot(a[m, 1, _nz, _nt], b[m, 1, _nz, _nt]))
     end
-    @loop_nt S[3] for _nz in 2:(S[2] >> 1) + 1, m in 1:M
-        @inbounds sum += 2*A[m, _nz-1, nt]*real(dot(a[m, _nz, _nt], b[m, _nz, _nt]))
+    @loop_nznt S[4] S[3] for _nx in 2:(S[2] >> 1) + 1, m in 1:M
+        @inbounds sum += 2*A[_nx-1, nz, nt]*real(dot(a[m, _nx, _nz, _nt], b[m, _nx, _nz, _nt]))
     end
     return sum/2
 end

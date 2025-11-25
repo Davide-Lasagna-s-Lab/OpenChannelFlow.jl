@@ -1,7 +1,6 @@
 # Definitions for the projected versions of the Navier-Stokes equations that
 # interface with the ReSolver.jl package.
 
-
 # ----------------------- #
 # projected navier-stokes #
 # ----------------------- #
@@ -14,10 +13,10 @@ struct ProjectedNSE{T, NSE, LNSE, SF}
     function ProjectedNSE(g::ChannelGrid, Re::Real, ::Type{T}=Float64; Ro::Real=0, base::Vector{T}=g.y, flags=FFTW.EXHAUSTIVE) where {T}
         # construct operators
         plans = FFTPlans(g, T, dealias=true, flags=flags)
-        scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:7]
-        pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:6]
-        nl = CouettePrimitiveNSE(T(Re), T(Ro), plans, scache, pcache)
-        ln = CouettePrimitiveLNSE(T(Re), T(Ro), plans, scache, pcache)
+        scache = [VectorField(g, T, N=3, type=SCField)               for _ in 1:6]
+        pcache = [VectorField(g, T, N=3, type=PCField, dealias=true) for _ in 1:8]
+        nl = CartesianPrimitiveNSE(T(Re), T(Ro), plans, scache, pcache)
+        ln = CartesianPrimitiveLNSE(T(Re), T(Ro), plans, scache, pcache)
 
         # construct independent cache
         cache = ntuple(_->VectorField(g, T, N=3, type=SCField), 2)
@@ -68,4 +67,4 @@ function (eq::ProjectedNSE)(out::ProjectedField{G, M},
     return out
 end
 
-add_base!(u, base) = (u[1][:, 1, 1] .+= base; return u)
+add_base!(u, base) = (u[1][:, 1, 1, 1] .+= base; return u)

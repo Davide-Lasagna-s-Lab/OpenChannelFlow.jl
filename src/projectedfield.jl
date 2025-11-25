@@ -1,32 +1,33 @@
-# Coefficient array representing a projected channel field
+# Coefficient array representing a projected channel field.
 
 # ----------------------- #
 # projected channel field #
 # ----------------------- #
-struct ProjectedField{G, M, T, A} <: AbstractArray{Complex{T}, 3}
+struct ProjectedField{G, M, T, A} <: AbstractArray{Complex{T}, 4}
     grid::G
-    data::Array{Complex{T}, 3}
+    data::Array{Complex{T}, 4}
     modes::A
 
-    function ProjectedField(g::G, data::Array{Complex{T}, 3}, modes::A) where {G, T, A}
+    function ProjectedField(g::G, data::Array{Complex{T}, 4}, modes::A) where {G, T, A}
         _check_compatibility(g, data, modes)
         new{G, size(data, 1), T, A}(g, data, modes)
     end
 end
-ProjectedField(g::ChannelGrid{S}, modes, ::Type{T}=Float64) where {S, T} = ProjectedField(g, zeros(Complex{T}, no_of_modes(modes), (S[2] >> 1) + 1, S[3]), modes)
+ProjectedField(g::ChannelGrid{S}, modes, ::Type{T}=Float64) where {S, T} = ProjectedField(g, zeros(Complex{T}, no_of_modes(modes), (S[2] >> 1) + 1, S[3], S[4]), modes)
 
 
 # --------------- #
 # utility methods #
 # --------------- #
-no_of_modes(modes::Array{Complex{T}, 4}) where {T} = size(modes, 2)
+no_of_modes(modes::Array{Complex{T}, 5}) where {T} = size(modes, 2)
 modes(a::ProjectedField) = a.modes
 grid(a::ProjectedField) = a.grid
 
 function _check_compatibility(::ChannelGrid{S}, data, modes) where {S}
     (size(modes, 1) % S[1] == 0 &&
-    (S[2] >> 1) + 1 == size(modes, 3) == size(data, 2) &&
-     S[3]           == size(modes, 4) == size(data, 3)) || throw(ArgumentError("grid, data, and/or modes are not compatible sizes"))
+    (S[2] >> 1) + 1 == size(modes, 3) == size(data, 2)  &&
+     S[3]           == size(modes, 4) == size(data, 3)  &&
+     S[4]           == size(modes, 5) == size(data, 4)) || throw(ArgumentError("grid, data, and/or modes are not compatible sizes"))
     size(data, 1) == no_of_modes(modes) || throw(ArgumentError("number of modes available not compatible with data"))
     return nothing
 end
@@ -60,19 +61,20 @@ Base.@propagate_inbounds function Base.setindex!(u::ProjectedField, val, i::Int)
 end
 
 # mode number idexing
-Base.@propagate_inbounds function Base.getindex(u::ProjectedField{G}, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
-    _nz, _nt, do_conj = _convert_modenumber(n, S[3])
-    @boundscheck checkbounds(u, ny, _nz, _nt)
-    @inbounds val = do_conj ? conj(u[ny, _nz, _nt]) : u[ny, _nz, _nt]
+Base.@propagate_inbounds function Base.getindex(a::ProjectedField{G}, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
+    _nx, _nz, _nt, do_conj = _convert_modenumber(n, S[3], S[4])
+    @boundscheck checkbounds(a, ny, _nx, _nz, _nt)
+    @inbounds val = do_conj ? conj(a[ny, _nx, _nz, _nt]) : a[ny, _nx, _nz, _nt]
     return val
 end
-Base.@propagate_inbounds function Base.setindex!(u::ProjectedField{G, M, T}, val, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}, M, T}
-    _nz, _nt, do_conj = _convert_modenumber(n, S[3])
+Base.@propagate_inbounds function Base.setindex!(a::ProjectedField{G, M, T}, val, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}, M, T}
+    _nx, _nz, _nt, do_conj = _convert_modenumber(n, S[3], S[4])
+    _nz_sym = _nz != 1 ? S[3] - _nz + 2 : _nz
     _nt_sym = _nt != 1 ? S[3] - _nt + 2 : _nt
-    val = (_nz == _nt == 1) ? Complex{T}(real(val)) : val
-    @boundscheck checkbounds(u, ny, _nz, _nt)
-                @inbounds u[ny, _nz, _nt]     = do_conj ? conj(val) :      val
-    _nz == 1 && @inbounds u[ny, _nz, _nt_sym] = do_conj ?      val  : conj(val)
+    val = (_nx == _nz == _nt == 1) ? Complex{T}(real(val)) : val
+    @boundscheck checkbounds(a, ny, _nx, _nz, _nt)
+                @inbounds a[ny, _nx, _nz,     _nt]     = do_conj ? conj(val) :      val
+    _nx == 1 && @inbounds a[ny, _nx, _nz_sym, _nt_sym] = do_conj ?      val  : conj(val)
     return val
 end
 
@@ -82,19 +84,19 @@ end
 # ------------------ #
 channel_int(u, ws, v, N) = sum(ws[i]*dot(u[i], v[i]) for i in 1:N)
 
-function project!(a::ProjectedField{G, M}, u::VectorField{N, <:SCField{G}}) where {S, G<:ChannelGrid{S}, M, N}
-    a .= 0.0
-    for nt in 1:S[3], nz in 1:(S[2] >> 1) + 1, m in 1:M, n in 1:N
-        @views @inbounds a[m, nz, nt] += channel_int(modes(a)[(S[1]*(n - 1) + 1):S[1]*n, m, nz, nt], grid(u).ws, u[n][:, nz, nt], S[1])
+function project!(a::ProjectedField{G, M, T}, u::VectorField{N, <:SCField{G}}) where {S, G<:ChannelGrid{S}, M, N, T}
+    a .= zero(T)
+    @loop_modes S[4] S[3] S[2] for m in 1:M, n in 1:N
+        @views @inbounds a[m, _nx, _nz, _nt] += channel_int(modes(a)[(S[1]*(n - 1) + 1):S[1]*n, m, _nx, _nz, _nt], grid(u).ws, u[n][:, _nx, _nz, _nt], S[1])
     end
     return a
 end
-project(u::VectorField, modes) = project!(ProjectedField(grid(u), modes), u)
+project(u::VectorField{N, SCField{G, T}}, modes) where {N, G, T} = project!(ProjectedField(grid(u), modes, T), u)
 
 function expand!(u::VectorField{N, <:SCField{G}}, a::ProjectedField{G, M}) where {N, S, G<:ChannelGrid{S}, M}
-    for n in 1:N, nt in 1:S[3], nz in 1:(S[2] >> 1) + 1
-        @views @inbounds mul!(u[n][:, nz, nt], modes(a)[(S[1]*(n - 1) + 1):S[1]*n, :, nz, nt], a[:, nz, nt])
+    @loop_modes S[4] S[3] S[2] for n in 1:N
+        @views @inbounds mul!(u[n][:, _nx, _nz, _nt], modes(a)[(S[1]*(n - 1) + 1):S[1]*n, :, _nx, _nz, _nt], a[:, _nx, _nz, _nt])
     end
     return u
 end
-expand(a::ProjectedField{G}) where {S, G<:ChannelGrid{S}} = expand!(VectorField(grid(a), N=size(modes(a), 1)÷S[1]), a)
+expand(a::ProjectedField{G, M, T}) where {S, G<:ChannelGrid{S}, M, T} = expand!(VectorField(grid(a), T, N=size(modes(a), 1)÷S[1]), a)

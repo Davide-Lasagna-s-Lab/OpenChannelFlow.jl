@@ -13,7 +13,7 @@ export dds!
 export shift!
 export dot, norm, normdiff, minnormdiff
 export FarazmandWeight
-export CouettePrimitiveNSE, CouettePrimitiveLNSE
+export CartesianPrimitiveNSE, CartesianPrimitiveLNSE
 export ProjectedNSE
 
 include("grid.jl")
@@ -28,8 +28,7 @@ include("derivatives.jl")
 include("shifts.jl")
 include("norms.jl")
 include("weighting.jl")
-include("couetteprimitive.jl")
+include("cartesianprimitive.jl")
 include("projectednse.jl")
-include("couettewallnormal.jl")
 
 end

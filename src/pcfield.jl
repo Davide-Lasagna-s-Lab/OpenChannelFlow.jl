@@ -1,21 +1,21 @@
 # Implementation of physical representation of scalar channel fields
 
-struct PCField{G<:ChannelGrid, T} <: AbstractArray{T, 3}
+struct PCField{G<:ChannelGrid, T} <: AbstractArray{T, 4}
     grid::G
-    data::Array{T, 3}
+    data::Array{T, 4}
 
-    function PCField(g::G, data::Array{T, 3}) where {G, T}
-        all(isodd.(size(data)[2:3])) || throw(ArgumentError("data must be odd"))
+    function PCField(g::G, data::Array{T, 4}) where {G, T}
+        all(isodd.(size(data)[2:4])) || throw(ArgumentError("data must be odd"))
         new{G, T}(g, data)
     end
 end
-PCField(g::G, ::Type{T}=Float64; dealias::Bool=false) where {S, G<:ChannelGrid{S}, T} = PCField(g, (y, z, t)->zero(T), 1.0, T, dealias=dealias)
+PCField(g::G, ::Type{T}=Float64; dealias::Bool=false) where {S, G<:ChannelGrid{S}, T} = PCField(g, (y, x, z, t)->zero(T), 1.0, T, dealias=dealias)
 
 # construct from function
 function PCField(g::ChannelGrid{S}, fun, period::Real, ::Type{T}=Float64; dealias::Bool=false) where {S, T}
     pad = dealias ? 3/2 : 1
-    y, z, t = points(g, period, _padded_size(S[2], S[3], Val(pad)))
-    data = fun.(reshape(y, :, 1, 1), reshape(z, 1, :, 1), reshape(t, 1, 1, :))
+    y, x, z, t = points(g, period, _padded_size((S[2], S[3], S[4]), Val(pad)))
+    data = fun.(reshape(y, :, 1, 1, 1), reshape(x, 1, :, 1, 1), reshape(z, 1, 1, :, 1), reshape(t, 1, 1, 1, :))
     return PCField(g, T.(data))
 end
 
@@ -53,12 +53,13 @@ end
 # --------------- #
 grid(u::PCField) = u.grid
 
-function _padded_size(Nz, Nt, ::Val{F}) where {F}
-    Nz_pad = ceil(Int, Nz*F)
-    Nt_pad = ceil(Int, Nt*F)
-    Nz_pad = (Nz_pad - Nz) % 2 == 0 ? Nz_pad : Nz_pad + 1
-    Nt_pad = (Nt_pad - Nt) % 2 == 0 ? Nt_pad : Nt_pad + 1
-    return Nz_pad, Nt_pad
+function _padded_size(sizes::NTuple{3, Int}, ::Val{F}) where {F}
+    psizes = zeros(Int, 3)
+    for i in 1:3
+        psizes[i] = _size_up(sizes[i], F)
+    end
+    return tuple(psizes...)
 end
+_padded_size(sizes::NTuple{3, Int}, ::Val{1}) = sizes
 
-_padded_size(Nz, Nt, ::Val{1}) = Nz, Nt
+@inline _size_up(N, F) = N == 1 ? 1 : (Np = ceil(Int, N*F); (Np - N) % 2 == 0 ? Np : Np + 1)

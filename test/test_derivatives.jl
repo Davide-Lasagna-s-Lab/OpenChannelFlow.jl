@@ -1,50 +1,48 @@
 @testset "Field derivatives                     " begin
     # function definitions
-    u_fun(y, z, t)      = (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
-    dudy_fun(y, z, t)   = -2*y*exp(cos(5.8*z))*atan(sin(t))
-    d2udy2_fun(y, z, t) = -2*exp(cos(5.8*z))*atan(sin(t))
-    dudz_fun(y, z, t)   = -5.8*(1 - y^2)*sin(5.8*z)*exp(cos(5.8*z))*atan(sin(t))
-    d2udz2_fun(y, z, t) = (5.8^2)*(1 - y^2)*(sin(5.8*z)^2 - cos(5.8*z))*exp(cos(5.8*z))*atan(sin(t))
-    lapl_fun(y, z, t)   = d2udy2_fun(y, z, t) + d2udz2_fun(y, z, t)
-    duds_fun(y, z, t)   = ((1 - y^2)*exp(cos(5.8*z))*cos(t))/(sin(t)^2 + 1)
+    u_fun(y, x, z, t)      = (1 - y^2)*cos(4π*x)*exp(cos(5.8*z))*atan(sin(t))
+    dudx_fun(y, x, z, t)   = -4π*(1 - y^2)*sin(4π*x)*exp(cos(5.8*z))*atan(sin(t))
+    d2udx2_fun(y, x, z, t) = -(4π)^2*(1 - y^2)*cos(4π*x)*exp(cos(5.8*z))*atan(sin(t))
+    dudy_fun(y, x, z, t)   = -2*y*cos(4π*x)*exp(cos(5.8*z))*atan(sin(t))
+    d2udy2_fun(y, x, z, t) = -2*cos(4π*x)*exp(cos(5.8*z))*atan(sin(t))
+    dudz_fun(y, x, z, t)   = -5.8*(1 - y^2)*cos(4π*x)*sin(5.8*z)*exp(cos(5.8*z))*atan(sin(t))
+    d2udz2_fun(y, x, z, t) = (5.8^2)*(1 - y^2)*cos(4π*x)*(sin(5.8*z)^2 - cos(5.8*z))*exp(cos(5.8*z))*atan(sin(t))
+    lapl_fun(y, x, z, t)   = d2udx2_fun(y, x, z, t) + d2udy2_fun(y, x, z, t) + d2udz2_fun(y, x, z, t)
+    duds_fun(y, x, z, t)   = ((1 - y^2)*cos(4π*x)*exp(cos(5.8*z))*cos(t))/(sin(t)^2 + 1)
 
     # construct grid
-    Ny = 32; Nz = 33; Nt = 51
-    g = ChannelGrid(chebpts(Ny), Nz, Nt,
-                    5.8,
+    Ny = 32; Nx = 15; Nz = 33; Nt = 51
+    g = ChannelGrid(chebpts(Ny), Nx, Nz, Nt,
+                    2π, 5.8,
                     chebdiff(Ny),
                     chebddiff(Ny),
                     chebws(Ny))
 
     # test values of derivatives
     u = FFT(PCField(g, u_fun, 2π))
+    @test OpenChannelFlow.ddx1!(     SCField(g), u) ≈ FFT(PCField(g, dudx_fun,   2π))
     @test OpenChannelFlow.ddx2!(     SCField(g), u) ≈ FFT(PCField(g, dudy_fun,   2π))
-    @test OpenChannelFlow.d2dx22!(   SCField(g), u) ≈ FFT(PCField(g, d2udy2_fun, 2π))
     @test OpenChannelFlow.ddx3!(     SCField(g), u) ≈ FFT(PCField(g, dudz_fun,   2π))
-    @test OpenChannelFlow.d2dx32!(   SCField(g), u) ≈ FFT(PCField(g, d2udz2_fun, 2π))
     @test OpenChannelFlow.laplacian!(SCField(g), u) ≈ FFT(PCField(g, lapl_fun,   2π))
-    @test                 dds!(      SCField(g), u) ≈ FFT(PCField(g, duds_fun,   2π))
 
     # test time derivative of projected field
     M = 10
-    Ψ = zeros(ComplexF64, Ny, M, (Nz >> 1) + 1, Nt)
-    for nt in 1:Nt, nz in 1:((Nz >> 1) + 1)
-        Ψ[:, :, nz, nt] .= qr(randn(ComplexF64, Ny, M)).Q[:, 1:M]
+    Ψ = zeros(ComplexF64, Ny, M, (Nx >> 1) + 1, Nz, Nt)
+    for nt in 1:Nt, nz in 1:Nz, nx in 1:(Nx >> 1) + 1
+        Ψ[:, :, nx, nz, nt] .= qr(randn(ComplexF64, Ny, M)).Q[:, 1:M]
     end
     for m in 1:M
-        OpenChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :]))
-        Ψ[:, m, 1, 1] .= real.(Ψ[:, m, 1, 1])
+        OpenChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :, :]))
+        Ψ[:, m, 1, 1, 1] .= real.(Ψ[:, m, 1, 1, 1])
     end
     a = project(FFT(VectorField(g, (u_fun,), 2π)), Ψ)
     @test dds!(similar(a), a) ≈ project(FFT(VectorField(g, (duds_fun,), 2π)), Ψ)
 
     # test allocation
     fun(dx, a, b) = @allocated dx(a, b)
+    @test fun(OpenChannelFlow.ddx1!,      SCField(g), u) == 0
     @test fun(OpenChannelFlow.ddx2!,      SCField(g), u) == 0
-    @test fun(OpenChannelFlow.d2dx22!,    SCField(g), u) == 0
     @test fun(OpenChannelFlow.ddx3!,      SCField(g), u) == 0
-    @test fun(OpenChannelFlow.d2dx32!,    SCField(g), u) == 0
     @test fun(OpenChannelFlow.laplacian!, SCField(g), u) == 0
-    @test fun(                dds!,       SCField(g), u) == 0
     @test fun(                dds!,       similar(a), a) == 0
 end
