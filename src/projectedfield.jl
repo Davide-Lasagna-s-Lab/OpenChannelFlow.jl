@@ -36,14 +36,15 @@ end
 # ----------------- #
 # interface methods #
 # ----------------- #
-Base.IndexStyle(::Type{<:ProjectedField})                            = Base.IndexLinear()
-Base.parent(a::ProjectedField)                                       = a.data
-Base.eltype(::ProjectedField{G, M, T}) where {G, M, T}               = Complex{T}
-Base.size(a::ProjectedField)                                         = size(parent(a))
-Base.similar(a::ProjectedField{G}, ::Type{T}=eltype(a)) where {G, T} = ProjectedField(grid(a), similar(parent(a), T), modes(a))
-Base.copy(a::ProjectedField{G}) where {G}                            = ProjectedField(grid(a), copy(parent(a)), modes(a))
-Base.zero(a::ProjectedField{G}) where {G}                            = ProjectedField(grid(a), zero(parent(a)), modes(a))
-Base.abs(a::ProjectedField)                                          = (b = zero(a); b .= abs.(a); return b)
+Base.IndexStyle(::Type{<:ProjectedField})                      = Base.IndexLinear()
+Base.parent(a::ProjectedField)                                 = a.data
+Base.eltype(::ProjectedField{G, M, T}) where {G, M, T}         = Complex{T}
+Base.size(a::ProjectedField)                                   = size(parent(a))
+Base.similar(a::ProjectedField, ::Type{T}=eltype(a)) where {T} = ProjectedField(grid(a), similar(parent(a), T), modes(a))
+Base.copy(a::ProjectedField)                                   = ProjectedField(grid(a), copy(parent(a)), modes(a))
+Base.zero(a::ProjectedField)                                   = ProjectedField(grid(a), zero(parent(a)), modes(a))
+Base.abs(a::ProjectedField)                                    = (b = zero(a); b .= abs.(a); return b)
+
 
 # ---------------- #
 # indexing methods #
