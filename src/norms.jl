@@ -3,7 +3,7 @@
 # ----------------------- #
 # standard inner products #
 # ----------------------- #
-function LinearAlgebra.dot(u::SCField{G, T}, v::SCField{G, T}) where {S, G<:ChannelGrid{S}, T}
+function LinearAlgebra.dot(u::FTField{G, T}, v::FTField{G, T}) where {S, G<:ChannelGrid{S}, T}
     sum = zero(T)
     @loop_nznt S[4] S[3] for ny in 1:S[1]
         @inbounds sum += grid(u).ws[ny]*real(dot(u[ny, 1, _nz, _nt], v[ny, 1, _nz, _nt]))
@@ -14,7 +14,7 @@ function LinearAlgebra.dot(u::SCField{G, T}, v::SCField{G, T}) where {S, G<:Chan
     return sum/2
 end
 
-function LinearAlgebra.dot(u::VectorField{N, SCField{G, T}}, v::VectorField{N, SCField{G, T}}) where {N, S, G<:ChannelGrid{S}, T}
+function LinearAlgebra.dot(u::VectorField{N, FTField{G, T}}, v::VectorField{N, FTField{G, T}}) where {N, S, G<:ChannelGrid{S}, T}
     sum = zero(T)
     for n in 1:N
         @inbounds sum += dot(u[n], v[n])
@@ -33,13 +33,13 @@ function LinearAlgebra.dot(a::ProjectedField{G, M, T}, b::ProjectedField{G, M, T
     return sum/2
 end
 
-LinearAlgebra.norm(u::Union{SCField, VectorField, ProjectedField}) = sqrt(dot(u, u))
+LinearAlgebra.norm(u::Union{FTField, VectorField, ProjectedField}) = sqrt(dot(u, u))
 
 
 # ----------- #
 # other norms #
 # ----------- #
-function normdiff(u::SCField{G, T}, v::SCField{G, T}, shifts=(0, 0, 0), tmp::SCField{G, T}=zero(v)) where {S, G<:ChannelGrid{S}, T}
+function normdiff(u::FTField{G, T}, v::FTField{G, T}, shifts=(0, 0, 0), tmp::FTField{G, T}=zero(v)) where {S, G<:ChannelGrid{S}, T}
     sum = zero(T)
     tmp .= v
     shift!(tmp, shifts)
@@ -52,7 +52,7 @@ function normdiff(u::SCField{G, T}, v::SCField{G, T}, shifts=(0, 0, 0), tmp::SCF
     return sqrt(sum/2)
 end
 
-function normdiff(u::VectorField{N, SCField{G, T}}, v::VectorField{N, SCField{G, T}}, shifts=(0, 0, 0), tmp::SCField{G, T}=zero(u[1])) where {N, S, G<:ChannelGrid{S}, T}
+function normdiff(u::VectorField{N, FTField{G, T}}, v::VectorField{N, FTField{G, T}}, shifts=(0, 0, 0), tmp::FTField{G, T}=zero(u[1])) where {N, S, G<:ChannelGrid{S}, T}
     sum = zero(T)
     for n in 1:N
         sum += normdiff(u[n], v[n], shifts, tmp)^2
@@ -73,11 +73,11 @@ function normdiff(a::ProjectedField{G, M, T}, b::ProjectedField{G, M, T}, shifts
     return sqrt(sum/2)
 end
 
-function minnormdiff(u::Union{SCField{G}, VectorField{D, SCField{G, T}}, ProjectedField{G, M, T}},
-                     v::Union{SCField{G}, VectorField{D, SCField{G, T}}, ProjectedField{G, M, T}},
+function minnormdiff(u::Union{FTField{G}, VectorField{D, FTField{G, T}}, ProjectedField{G, M, T}},
+                     v::Union{FTField{G}, VectorField{D, FTField{G, T}}, ProjectedField{G, M, T}},
                      N::NTuple{3, Int}=(32, 32, 32),
-                  tmp1::SCField{G}=zero(v),
-                  tmp2::SCField{G}=zero(v)) where {D, G, M, T}
+                  tmp1::FTField{G}=zero(v),
+                  tmp2::FTField{G}=zero(v)) where {D, G, M, T}
     # minimum values
     min_diff = Inf
     sx_min   = Inf

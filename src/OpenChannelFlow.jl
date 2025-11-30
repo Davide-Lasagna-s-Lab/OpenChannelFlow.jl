@@ -2,10 +2,12 @@ module OpenChannelFlow
 
 using FFTW, LinearAlgebra
 
+using FlowFieldsBase
+
 export ChannelGrid, points, growto, get_fields
 export ModeNumber
-export SCField, grid
-export PCField
+export FTField, grid
+export Field
 export VectorField
 export ProjectedField, modes, project!, project, expand!, expand
 export FFT, IFFT

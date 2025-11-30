@@ -33,12 +33,4 @@ Base.zero(q::VectorField{N}) where {N}                              = VectorFiel
 # --------------- #
 # utility methods #
 # --------------- #
-grid(u::VectorField) = grid(u[1])
 
-function growto(u::VectorField{L, <:SCField}, N::NTuple{3, Int}) where {L}
-    v = VectorField(growto(grid(u), N), N=L, type=SCField)
-    for n in 1:L
-        parent(v[n]) .= parent(growto(u[n], N))
-    end
-    return v
-end
