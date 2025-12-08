@@ -71,12 +71,13 @@ end
     Re = rand()*50
     Ro = rand()
     op_nl = CartesianPrimitiveNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE)
-    op_ln = CartesianPrimitiveLNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE)
+    op_ln = CartesianPrimitiveLNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE, adjoint=false)
+    op_ad = CartesianPrimitiveLNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE, adjoint=true)
     a = op_nl(0.0, u .+ 1e-6.*v, similar(u)) - op_nl(0.0, u, similar(u))
-    b = op_ln(0.0, u, 1e-6.*v, similar(u), false)
+    b = op_ln(0.0, u, 1e-6.*v, similar(u))
     @test norm(a - b) < 1e-11
 
     # test adjoint identity
-    @test dot(op_ln(0.0, u, v, similar(u), false), w) ≈ dot(v, op_ln(0.0, u, w, similar(u), true)) + dot(v, div_u_w)
+    @test dot(op_ln(0.0, u, v, similar(u)), w) ≈ dot(v, op_ad(0.0, u, w, similar(u))) + dot(v, div_u_w)
     # extra term in adjoint operator is required for field `u` that isn't divergence-free
 end

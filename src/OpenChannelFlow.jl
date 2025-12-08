@@ -2,7 +2,7 @@ module OpenChannelFlow
 
 using FFTW, LinearAlgebra
 
-using FlowFieldsBase
+using NSEBase
 
 export ChannelGrid, points, growto, get_fields
 export ModeNumber
@@ -20,17 +20,12 @@ export ProjectedNSE
 
 include("grid.jl")
 include("modenumber.jl")
-include("scfield.jl")
-include("pcfield.jl")
-include("vectorfield.jl")
-include("fft.jl")
-include("projectedfield.jl")
-include("broadcasting.jl")
+include("ftfield.jl")
+include("field.jl")
 include("derivatives.jl")
 include("shifts.jl")
 include("norms.jl")
 include("weighting.jl")
 include("cartesianprimitive.jl")
-include("projectednse.jl")
 
 end

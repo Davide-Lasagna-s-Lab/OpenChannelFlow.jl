@@ -14,16 +14,17 @@ temporal directions, given by `shifts[1]`, `shifts[2]`, and `shifts[3]`
 respectively. This function modifies the field it is provided, so be careful
 when using.
 """
-shift!(u::Union{SCField, VectorField, ProjectedField}, shifts) = tshift!(zshift!(xshift!(u, shifts[1]), shifts[2]), shifts[3])
+shift!(u::Union{FTField, VectorField, ProjectedField}, shifts) = tshift!(zshift!(xshift!(u, shifts[1]), shifts[2]), shifts[3])
 
 
 # ---------------- #
 # streamwise shift #
 # ---------------- #
-xshift!(u::SCField{G}, sx) where {S, G<:ChannelGrid{S}} = _perform_xshift!(u, sx, S[1], S[2], S[3], S[4])
-xshift!(a::ProjectedField{G, M}, sx) where {S, G<:ChannelGrid{S}, M} = _perform_xshift!(a, sx, M, S[2], S[3], S[4])
+xshift!(u::FTField{G}, sx) where {S, G<:ChannelGrid{S}} = _perform_xshift!(u, sx, S[1], S[2], S[3], S[4])
+# TODO: needs to be added back once extra grid structure has been added back to NSEBase.jl
+# xshift!(a::ProjectedField{F}, sx) where {S, F<:FTField{<:ChannelGrid{S}}} = _perform_xshift!(a, sx, size(a, 1), S[2], S[3], S[4])
 
-function xshift!(u::VectorField{N, <:SCField}, sx) where {N}
+function xshift!(u::VectorField{N, <:FTField}, sx) where {N}
     for n in 1:N
         xshift!(u[n], sx)
     end
@@ -44,10 +45,10 @@ end
 # -------------- #
 # spanwise shift #
 # -------------- #
-zshift!(u::SCField{G}, sz) where {S, G<:ChannelGrid{S}} = _perform_zshift!(u, sz, S[1], S[2], S[3], S[4])
-zshift!(a::ProjectedField{G, M}, sz) where {S, G<:ChannelGrid{S}, M} = _perform_zshift!(a, sz, M, S[2], S[3], S[4])
+zshift!(u::FTField{G}, sz) where {S, G<:ChannelGrid{S}} = _perform_zshift!(u, sz, S[1], S[2], S[3], S[4])
+# zshift!(a::ProjectedField{F}, sz) where {S, F<:FTField{<:ChannelGrid{S}}} = _perform_zshift!(a, sz, size(a, 1), S[2], S[3], S[4])
 
-function zshift!(u::VectorField{N, <:SCField}, sz) where {N}
+function zshift!(u::VectorField{N, <:FTField}, sz) where {N}
     for n in 1:N
         zshift!(u[n], sz)
     end
@@ -69,10 +70,10 @@ end
 # -------------- #
 # temporal shift #
 # -------------- #
-tshift!(u::SCField{G}, st) where {S, G<:ChannelGrid{S}} = _perform_tshift!(u, st, S[1], S[2], S[3], S[4])
-tshift!(a::ProjectedField{G, M}, st) where {S, G<:ChannelGrid{S}, M} = _perform_tshift!(a, st, M, S[2], S[3], S[4])
+tshift!(u::FTField{G}, st) where {S, G<:ChannelGrid{S}} = _perform_tshift!(u, st, S[1], S[2], S[3], S[4])
+# tshift!(a::ProjectedField{F}, st) where {S, F<:FTField{<:ChannelGrid{S}}} = _perform_tshift!(a, st, size(a, 1), S[2], S[3], S[4])
 
-function tshift!(u::VectorField{N, <:SCField}, st) where {N}
+function tshift!(u::VectorField{N, <:FTField}, st) where {N}
     for n in 1:N
         tshift!(u[n], st)
     end

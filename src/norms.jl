@@ -14,26 +14,16 @@ function LinearAlgebra.dot(u::FTField{G, T}, v::FTField{G, T}) where {S, G<:Chan
     return sum/2
 end
 
-function LinearAlgebra.dot(u::VectorField{N, FTField{G, T}}, v::VectorField{N, FTField{G, T}}) where {N, S, G<:ChannelGrid{S}, T}
+function LinearAlgebra.dot(a::ProjectedField{F, Complex{T}}, b::ProjectedField{F, Complex{T}}) where {S, F<:FTField{<:ChannelGrid{S}}, T}
     sum = zero(T)
-    for n in 1:N
-        @inbounds sum += dot(u[n], v[n])
-    end
-    return sum
-end
-
-function LinearAlgebra.dot(a::ProjectedField{G, M, T}, b::ProjectedField{G, M, T}) where {S, G<:ChannelGrid{S}, M, T}
-    sum = zero(T)
-    @loop_nznt S[4] S[3] for m in 1:M
+    @loop_nznt S[4] S[3] for m in axes(a, 1)
         @inbounds sum += real(dot(a[m, 1, _nz, _nt], b[m, 1, _nz, _nt]))
     end
-    @loop_nznt S[4] S[3] for _nx in 2:(S[2] >> 1) + 1, m in 1:M
+    @loop_nznt S[4] S[3] for _nx in 2:(S[2] >> 1) + 1, m in axes(a, 1)
         @inbounds sum += 2*real(dot(a[m, _nx, _nz, _nt], b[m, _nx, _nz, _nt]))
     end
     return sum/2
 end
-
-LinearAlgebra.norm(u::Union{FTField, VectorField, ProjectedField}) = sqrt(dot(u, u))
 
 
 # ----------- #
@@ -60,24 +50,25 @@ function normdiff(u::VectorField{N, FTField{G, T}}, v::VectorField{N, FTField{G,
     return sqrt(sum)
 end
 
-function normdiff(a::ProjectedField{G, M, T}, b::ProjectedField{G, M, T}, shifts=(0, 0, 0), tmp::ProjectedField{G, M, T}=zero(b)) where {S, G<:ChannelGrid{S}, M, T}
+function normdiff(a::ProjectedField{S, T}, b::ProjectedField{S, T}, shifts=(0, 0, 0), tmp::ProjectedField{S, T}=zero(b)) where {S<:FTField, T}
+    throw(error("Method does not working for projected fields"))
     sum = zero(T)
     tmp .= b
     shift!(tmp, shifts)
-    @loop_nznt S[4] S[3] for m in 1:M
+    @loop_nznt S[4] S[3] for m in axes(a, 1)
         @inbounds sum += abs2(a[m, 1, _nz, _nt] - tmp[m, 1, _nz, _nt])
     end
-    @loop_nznt S[4] S[3] for _nx in 2:(S[2] >> 1) + 1, m in 1:M
+    @loop_nznt S[4] S[3] for _nx in 2:(S[2] >> 1) + 1, m in axes(a, 1)
         @inbounds sum += 2*abs2(a[m, _nx, _nz, _nt] - tmp[m, _nx, _nz, _nt])
     end
     return sqrt(sum/2)
 end
 
-function minnormdiff(u::Union{FTField{G}, VectorField{D, FTField{G, T}}, ProjectedField{G, M, T}},
-                     v::Union{FTField{G}, VectorField{D, FTField{G, T}}, ProjectedField{G, M, T}},
+function minnormdiff(u::Union{FTField{G}, VectorField{D, FTField{G}}, ProjectedField{FTField{G}}},
+                     v::Union{FTField{G}, VectorField{D, FTField{G}}, ProjectedField{FTField{G}}},
                      N::NTuple{3, Int}=(32, 32, 32),
                   tmp1::FTField{G}=zero(v),
-                  tmp2::FTField{G}=zero(v)) where {D, G, M, T}
+                  tmp2::FTField{G}=zero(v)) where {D, G}
     # minimum values
     min_diff = Inf
     sx_min   = Inf

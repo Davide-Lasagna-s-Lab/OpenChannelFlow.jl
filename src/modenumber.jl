@@ -1,4 +1,4 @@
-# Utility object to allow dispatch for different indexing methods on SCField
+# Utility object to allow dispatch for different indexing methods on FTField
 
 # ?: I wonder if I could define a @modenumber macro that converts the indexes at parse time and keeps the nice loops?
 

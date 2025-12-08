@@ -44,16 +44,16 @@
     b[:, 1, 1, 1] .= real.(b[:, 1, 1, 1])
     OpenChannelFlow.apply_symmetry!(a)
     OpenChannelFlow.apply_symmetry!(b)
-    u = expand(a)
+    u = expand!(VectorField(g), a)
     u[1][:, 1, 1, 1] .+= g.y
-    v = expand(b)
+    v = expand!(VectorField(g), b)
 
     # test projected equations
     Re = rand()*50
     Ro = rand()
     op_nl = CartesianPrimitiveNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE)
-    op_ln = CartesianPrimitiveLNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE)
+    op_ln = CartesianPrimitiveLNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE, adjoint=true)
     op_pr = ProjectedNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE)
     @test op_pr(similar(a), a)    ≈ project(op_nl(0, u, similar(u)), Ψ)
-    @test op_pr(similar(a), a, b) ≈ project(op_ln(0, u, v, similar(u), true), Ψ)
+    @test op_pr(similar(a), a, b) ≈ project(op_ln(0, u, v, similar(u)), Ψ)
 end

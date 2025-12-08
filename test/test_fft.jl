@@ -8,34 +8,33 @@
                     chebws(Ny))
 
     # create plans
-    plans  = @test_nowarn OpenChannelFlow.FFTPlans(g; dealias=false, flags=FFTW.ESTIMATE)
-    plansd = @test_nowarn OpenChannelFlow.FFTPlans(g; dealias=true,  flags=FFTW.ESTIMATE)
+    plans  = @test_nowarn OpenChannelFlow.FFTPlans((Ny, Nx, Nz, Nt), (2, 3, 4), dealias=false, flags=FFTW.ESTIMATE)
+    plansd = @test_nowarn OpenChannelFlow.FFTPlans((Ny, Nx, Nz, Nt), (2, 3, 4), dealias=true,  flags=FFTW.ESTIMATE)
 
     # randon signal
-    U  = SCField(g, rand(ComplexF64, Ny, (Nx >> 1) + 1, Nz, Nt))
-    Ud = growto(U, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(3/2)))
-    u  = PCField(g)
-    ud = PCField(g, dealias=true)
+    U  = FTField(g, rand(ComplexF64, Ny, (Nx >> 1) + 1, Nz, Nt))
+    Ud = growto(U, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true)))
+    u  = Field(g)
+    ud = Field(g, dealias=true)
 
     # test transforms
-    tmp = plansd(similar(U), plansd(ud, U))
-    @test  plans(similar(U),  plans(u,  U))             ≈   U
-    @test plansd(similar(U), plansd(ud, U))             ≈   U
-    @test plansd(   copy(U), plansd(ud, U), Val(false)) ≈ 2*U
+    @test  plans(similar(U),  plans(u,  U))       ≈   U
+    @test plansd(similar(U), plansd(ud, U))       ≈   U
+    @test plansd(   copy(U), plansd(ud, U), true) ≈ 2*U
 
     # test allocations
-    fun(plan, A, B) = @allocated plan(A, B)
-    fun(plansd, ud, U) # required to avoid allocation when first called (for some unknown reason)
-    @test fun(plans,  u,          U)  == 0
-    @test fun(plans,  similar(U), u)  == 0
-    @test fun(plansd, ud,         U)  == 0
-    @test fun(plansd, similar(U), ud) == 0
+    funf(plan, A, B) = @allocated plan(A, B)
+    funb(plan, B, A) = @allocated plan(B, A, false)
+    funf(plans, ud,  U) # required to avoid allocation when first called (for some unknown reason)
+    funb(plans,  U, ud)
+    @test funf(plans, ud,  U) == 0
+    @test funb(plans,  U, ud) == 0
 
     # test allocating transforms
     @test FFT(plans(similar(u), U)) ≈ U
     @test IFFT(U) == plans(similar(u), U)
-    @test FFT(plans(similar(u), U), OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(3/2))) ≈ Ud
-    @test IFFT(U, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(3/2))) == plansd(similar(ud), U)
+    @test FFT(plans(similar(u), U), OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true))) ≈ Ud
+    @test IFFT(U, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true))) == plansd(similar(ud), U)
 
     # vector field transforms
     U = VectorField(g)
@@ -44,7 +43,7 @@
         parent(U[n])[:, 1, 1, 1] .= real.(parent(U[n])[:, 1, 1, 1])
         OpenChannelFlow.apply_symmetry!(parent(U[n]))
     end
-    u = VectorField(g, type=PCField)
+    u = VectorField(g, type=Field)
     U_new = plans(similar(U), plans(u, U))
     for n in 1:3
         @test U_new[n] ≈ U[n]
@@ -52,7 +51,7 @@
     @test IFFT(U) == u
     u_new = IFFT(U, (11, 21, 15))
     for n in 1:3
-        @test u_new[n] ≈ IFFT(growto(U[n], (11, 21, 15)))
+        @test parent(u_new[n]) ≈ parent(IFFT(growto(U[n], (11, 21, 15))))
     end
     U_new = FFT(u)
     for n in 1:3

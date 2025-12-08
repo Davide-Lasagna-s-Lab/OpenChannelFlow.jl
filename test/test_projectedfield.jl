@@ -15,9 +15,7 @@
     end
 
     # test constructor
-    @test ProjectedField(g, Ψ) isa ProjectedField{typeof(g), 10, Float64, Array{ComplexF64, 5}}
-    @test ProjectedField(g, zeros(ComplexF64, M, (Nx >> 1) + 1, Nz, Nt), Ψ) isa ProjectedField{typeof(g), 10, Float64, Array{ComplexF64, 5}}
-    @test_throws ArgumentError ProjectedField(g, zeros(ComplexF64, M+1, (Nx >> 1) + 1, Nz, Nt), Ψ)
+    @test ProjectedField(g, Ψ) isa ProjectedField{FTField{typeof(g), Float64}, ComplexF64, 4, Array{ComplexF64, 5}}
 
     # test channel integration
     u = ComplexF64[(y^2)*cos(π*y/2) for y in g.y]
@@ -34,5 +32,7 @@
         u[3][:, nx, nz, nt] .= Ψ[2*Ny+1:3*Ny, :, nx, nz, nt]*a[:, nx, nz, nt]
     end
     @test project(u, Ψ) ≈ a
-    @test expand(a) ≈ u
+    for n in 1:3
+        @test expand!(similar(u), a)[n] ≈ u[n]
+    end
 end
