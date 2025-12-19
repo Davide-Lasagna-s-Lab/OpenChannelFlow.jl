@@ -74,20 +74,24 @@ NSEBase.add_base!(u::VectorField{N, <:FTField}, base) where {N} = (u[1][:, 1, 1,
 #---------------- #
 NSEBase.ProjectedField(::G, modes, ::Type{T}=Float64) where {S, G<:ChannelGrid{S}, T} = ProjectedField(FTField{G, T}, zeros(Complex{T}, size(modes, 2), (S[2] >> 1) + 1, S[3], S[4]), modes)
 
-channel_int(u, ws, v, N) = sum(ws[i]*dot(u[i], v[i]) for i in 1:N)
+@inline _channel_int(u, ws, v, N) = sum(ws[i]*dot(u[i], v[i]) for i in 1:N)
+@inline _get_mode(modes, Ny, n, m, nx, nz, nt) = @view(modes[(Ny*(n - 1) + 1):Ny*n, m, nx, nz, nt])
 
-function NSEBase.project!(a::ProjectedField{F, T}, u::VectorField{N, F}) where {S, F<:FTField{<:ChannelGrid{S}}, N, T}
+NSEBase.project(u::VectorField{N, <:FTField{G, T}}, modes) where {N, G, T} = project!(ProjectedField(grid(u), modes, T), u)
+NSEBase.project!(a::ProjectedField{F, T}, u::VectorField{N, F}) where {S, F<:FTField{<:ChannelGrid{S}}, N, T} = _project!(a, u, S, size(a, 1), N, T)
+function _project!(a, u, S, M, N, ::Type{T}) where {T}
     a .= zero(T)
-    @loop_modes S[4] S[3] S[2] for m in axes(a, 1), n in 1:N
-        @views @inbounds a[m, _nx, _nz, _nt] += channel_int(modes(a)[(S[1]*(n - 1) + 1):S[1]*n, m, _nx, _nz, _nt], grid(u).ws, u[n][:, _nx, _nz, _nt], S[1])
+    @loop_modes S[4] S[3] S[2] for m in 1:M, n in 1:N
+    @views @inbounds a[m, _nx, _nz, _nt] += _channel_int(_get_mode(modes(a), S[1], n, m, _nx, _nz, _nt), grid(u).ws, u[n][:, _nx, _nz, _nt], S[1])
     end
     return a
 end
-NSEBase.project(u::VectorField{N, FTField{G, T}}, modes) where {N, G, T} = project!(ProjectedField(grid(u), modes, T), u)
 
-function NSEBase.expand!(u::VectorField{N, F}, a::ProjectedField{F}) where {N, S, F<:FTField{<:ChannelGrid{S}}}
-    @loop_modes S[4] S[3] S[2] for n in 1:N
-        @views @inbounds mul!(u[n][:, _nx, _nz, _nt], modes(a)[(S[1]*(n - 1) + 1):S[1]*n, :, _nx, _nz, _nt], a[:, _nx, _nz, _nt])
+NSEBase.expand!(u::VectorField{N, F}, a::ProjectedField{F}) where {N, S, F<:FTField{<:ChannelGrid{S}}} = _expand!(u, a, S, size(a, 1), N)
+function _expand!(u, a, S, M, N)
+    u .*= 0
+    @loop_modes S[4] S[3] S[2] for n in 1:N, m in axes(a, 1)
+        @views @inbounds u[n][:, _nx, _nz, _nt] .+= a[m, _nx, _nz, _nt].*_get_mode(modes(a), S[1], n, m, _nx, _nz, _nt)
     end
     return u
 end
