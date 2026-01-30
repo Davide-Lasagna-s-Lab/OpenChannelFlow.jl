@@ -3,23 +3,31 @@
 # -------------- #
 # spectral field #
 # -------------- #
-struct FTField{G<:ChannelGrid, T} <: AbstractScalarField{4, Complex{T}}
+# ! is the T type parameter necessary?
+struct FTField{G, T, A<:AbstractArray{Complex{T}, 4}} <: AbstractScalarField{4, Complex{T}}
     grid::G
-    data::Array{Complex{T}, 4}
+    data::A
 
-    function FTField(g::G, data::Array{Complex{T}, 4}) where {G, T}
+    # generic constructor for halo and CUDA arrays
+    function FTField(g::G, data::A) where {S, T, G<:Abstract1DChannelGrid{S, T}, A<:AbstractArray}
+        new{G, T, A}(g, Complex{T}.(data))
+    end
+
+    # sequential array constructor
+    # ! is this necessary? !
+    function FTField(g::G, data::Array) where {S, T, G<:Abstract1DChannelGrid{S, T}}
         apply_symmetry!(data)
         data[:, 1, 1, 1] .= real.(data[:, 1, 1, 1])
-        new{G, T}(g, data)
+        new{G, T, Array{Complex{T}, 4}}(g, Complex{T}.(data))
     end
 end
-FTField(g::G, ::Type{T}=Float64) where {S, G<:ChannelGrid{S}, T} = FTField(g, zeros(Complex{T}, S[1], (S[2] >> 1) + 1, S[3], S[4]))
+FTField(g::G) where {S, T, G<:ChannelGrid{S, T}} = FTField(g, zeros(Complex{T}, S[1], (S[2] >> 1) + 1, S[3], S[4]))
 
 Base.parent(u::FTField)                                 = u.data
 Base.eltype(::FTField{G, T}) where {G, T}               = Complex{T}
-Base.similar(u::FTField, ::Type{T}=eltype(u)) where {T} = FTField(grid(u), similar(parent(u), T))
+Base.similar(u::FTField, ::Type{Complex{T}}=eltype(u)) where {T} = FTField(similar(grid(u), T), similar(parent(u)))
 
-NSEBase.hsize(::FTField{<:ChannelGrid{S}}) where {S} = ((S[2] >> 1) + 1, S[3], S[4])
+NSEBase.hsize(::FTField{<:Abstract1DChannelGrid{S}}) where {S} = ((S[2] >> 1) + 1, S[3], S[4])
 
 
 # ---------------- #
@@ -64,31 +72,28 @@ end
 # ------------------------------ #
 # vector field grid constructors #
 # ------------------------------ #
-NSEBase.VectorField(g::ChannelGrid, ::Type{T}=Float64; N::Int=3, type::Type{S}=FTField, kwargs...) where {T, S} = VectorField([type(g, T; kwargs...) for _ in 1:N]...)
-NSEBase.VectorField(g::ChannelGrid, funcs, period, ::Type{T}=Float64; dealias::Bool=false) where {T} = VectorField([Field(g, f, period, T, dealias=dealias) for f in funcs]...)
+NSEBase.VectorField(g::Abstract1DChannelGrid, ::Type{T}=FTField; N::Int=3, kwargs...) where {T} = VectorField([T(g; kwargs...) for _ in 1:N]...)
+NSEBase.VectorField(g::Abstract1DChannelGrid, funcs, period; dealias::Bool=false) = VectorField([Field(g, f, period, dealias=dealias) for f in funcs]...)
 NSEBase.add_base!(u::VectorField{N, <:FTField}, base) where {N} = (u[1][:, 1, 1, 1] .+= base; return u)
 
 
 #---------------- #
 # projected stuff #
 #---------------- #
-NSEBase.ProjectedField(::G, modes, ::Type{T}=Float64) where {S, G<:ChannelGrid{S}, T} = ProjectedField(FTField{G, T}, zeros(Complex{T}, size(modes, 2), (S[2] >> 1) + 1, S[3], S[4]), modes)
+NSEBase.ProjectedField(g::Abstract1DChannelGrid{S, T}, modes) where {S, T} = ProjectedField(typeof(FTField(g)), zeros(Complex{T}, size(modes, 2), (S[2] >> 1) + 1, S[3], S[4]), modes)
 
 @inline _channel_int(u, ws, v, N) = sum(ws[i]*dot(u[i], v[i]) for i in 1:N)
 @inline _get_mode(modes, Ny, n, m, nx, nz, nt) = @view(modes[(Ny*(n - 1) + 1):Ny*n, m, nx, nz, nt])
 
-NSEBase.project(u::VectorField{N, <:FTField{G, T}}, modes) where {N, G, T} = project!(ProjectedField(grid(u), modes, T), u)
-NSEBase.project!(a::ProjectedField{F, T}, u::VectorField{N, F}) where {S, F<:FTField{<:ChannelGrid{S}}, N, T} = _project!(a, u, S, size(a, 1), N, T)
-function _project!(a, u, S, M, N, ::Type{T}) where {T}
+function NSEBase.project!(a::ProjectedField{F}, u::VectorField{N, F}) where {S, T, F<:FTField{<:Abstract1DChannelGrid{S, T}}, N}
     a .= zero(T)
-    @loop_modes S[4] S[3] S[2] for m in 1:M, n in 1:N
-    @views @inbounds a[m, _nx, _nz, _nt] += _channel_int(_get_mode(modes(a), S[1], n, m, _nx, _nz, _nt), grid(u).ws, u[n][:, _nx, _nz, _nt], S[1])
+    @loop_modes S[4] S[3] S[2] for m in axes(a, 1), n in 1:N
+        @views @inbounds a[m, _nx, _nz, _nt] += _channel_int(_get_mode(modes(a), S[1], n, m, _nx, _nz, _nt), grid(u).ws, u[n][:, _nx, _nz, _nt], S[1])
     end
     return a
 end
 
-NSEBase.expand!(u::VectorField{N, F}, a::ProjectedField{F}) where {N, S, F<:FTField{<:ChannelGrid{S}}} = _expand!(u, a, S, size(a, 1), N)
-function _expand!(u, a, S, M, N)
+function NSEBase.expand!(u::VectorField{N, F}, a::ProjectedField{F}) where {N, S, T, F<:FTField{<:Abstract1DChannelGrid{S, T}}}
     u .*= 0
     @loop_modes S[4] S[3] S[2] for n in 1:N, m in axes(a, 1)
         @views @inbounds u[n][:, _nx, _nz, _nt] .+= a[m, _nx, _nz, _nt].*_get_mode(modes(a), S[1], n, m, _nx, _nz, _nt)
@@ -96,22 +101,22 @@ function _expand!(u, a, S, M, N)
     return u
 end
 
-function dds!(out::ProjectedField{F}, a::ProjectedField{F}) where {S, F<:FTField{<:ChannelGrid{S}}}
+function dds!(out::ProjectedField{F}, a::ProjectedField{F}) where {S, F<:FTField{<:Abstract1DChannelGrid{S}}}
     @loop_modes S[4] S[3] S[2] for m in axes(a, 1)
         @inbounds out[m, _nx, _nz, _nt] = 1im*nt*a[m, _nx, _nz, _nt]
     end
     return out
 end
 
-function NSEBase.ProjectedNSE(g::ChannelGrid{S}, Re::Real, ::Type{T}=Float64; Ro::Real=0, base::Vector{T}=g.y, flags=FFTW.EXHAUSTIVE, adjoint=true) where {S, T}
+function NSEBase.ProjectedNSE(g::Abstract1DChannelGrid{S, T}, Re; Ro=0, base::Vector=g.y, flags=FFTW.EXHAUSTIVE, adjoint=true) where {S, T}
     # construct operators
     plans = FFTPlans(S, (2, 3, 4), T, flags=flags)
-    scache = [VectorField([FTField(g, T)               for _ in 1:3]...) for _ in 1:6]
-    pcache = [VectorField([  Field(g, T, dealias=true) for _ in 1:3]...) for _ in 1:8]
+    scache = [VectorField([FTField(g)               for _ in 1:3]...) for _ in 1:6]
+    pcache = [VectorField([  Field(g, dealias=true) for _ in 1:3]...) for _ in 1:8]
     nl = CartesianPrimitiveNSE(T(Re), T(Ro), plans, scache, pcache)
     ln = CartesianPrimitiveLNSE(T(Re), T(Ro), plans, scache, pcache, adjoint)
 
-    return ProjectedNSE(scache[1][1], nl, ln, base, T)
+    return ProjectedNSE(scache[1][1], nl, ln, T.(base), T)
 end
 
 
@@ -121,8 +126,8 @@ end
 grid(u::FTField) = u.grid
 grid(u::VectorField) = grid(u[1])
 
-function growto(u::FTField{G, T}, N::NTuple{3, Int}) where {S, G<:ChannelGrid{S}, T}
-    out = FTField(growto(grid(u), N), T)
+function growto(u::FTField{G}, N::NTuple{3, Int}) where {S, G<:Abstract1DChannelGrid{S}}
+    out = FTField(growto(grid(u), N))
     for ny in 1:S[1], nx in 0:(S[2] >> 1), nz in -(S[3] >> 1):(S[3] >> 1), nt in -(S[4] >> 1):(S[4] >> 1)
         out[ny, ModeNumber(nx, nz, nt)] = u[ny, ModeNumber(nx, nz, nt)]
     end

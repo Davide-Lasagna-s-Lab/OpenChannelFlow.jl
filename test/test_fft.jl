@@ -43,7 +43,7 @@
         parent(U[n])[:, 1, 1, 1] .= real.(parent(U[n])[:, 1, 1, 1])
         OpenChannelFlow.apply_symmetry!(parent(U[n]))
     end
-    u = VectorField(g, type=Field)
+    u = VectorField(g, Field)
     U_new = plans(similar(U), plans(u, U))
     for n in 1:3
         @test U_new[n] ≈ U[n]

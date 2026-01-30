@@ -10,8 +10,8 @@ export FTField, grid
 export Field
 export VectorField
 export ProjectedField, modes, project!, project, expand!, expand
-export FFT, IFFT
-export dds!
+export FFT, IFFT, FFTPlans
+export dds!, ddx1!, ddx2!, ddx3!, laplacian!
 export shift!
 export dot, norm, normdiff, minnormdiff
 export FarazmandWeight

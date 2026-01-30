@@ -1,4 +1,4 @@
-@testset "Couette primitive NSE                 " begin
+@testset "Cartesian primitive NSE               " begin
     # define functions
     u_fun(y, x, z, t)      = y + (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
     dudy_fun(y, x, z, t)   = 1 - 2*y*exp(cos(5.8*z))*atan(sin(t))
@@ -36,17 +36,17 @@
     @test op(0.0, u, similar(u)) ≈ exact
 end
 
-@testset "Couette primitive linearised NSE      " begin
+@testset "Cartesian primitive linearised NSE    " begin
     # define functions
-    ux_fun(y, x, z, t) = y + (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
-    uy_fun(y, x, z, t) = cos(π*y/2)^4*sin(5.8*z)*cos(sin(t))
-    uz_fun(y, x, z, t) = (1 - y^2)*cos(5.8*z)*cos(cos(t))
-    vx_fun(y, x, z, t) = cos(π*y/2)^2*exp(sin(5.8*z))*cos(sin(t))
-    vy_fun(y, x, z, t) = (1 - y^2)*exp(cos(5.8*z))*atan(cos(t))
-    vz_fun(y, x, z, t) = sin(π*y)*sin(z)^2*cos(t)
-    wx_fun(y, x, z, t) = cos(π*y)*(1 - y^2)*exp(sin(5.8*z))*cos(t)^2
-    wy_fun(y, x, z, t) = cos(π*y/2)*cos(5.8*z)*sin(t)^2
-    wz_fun(y, x, z, t) = cos(π*y/2)^4*sin(5.8*z)*atan(cos(t))
+    ux_fun(y, x, z, t)       = y + (1 - y^2)*exp(cos(5.8*z))*atan(sin(t))
+    uy_fun(y, x, z, t)       = cos(π*y/2)^4*sin(5.8*z)*cos(sin(t))
+    uz_fun(y, x, z, t)       = (1 - y^2)*cos(5.8*z)*cos(cos(t))
+    vx_fun(y, x, z, t)       = cos(π*y/2)^2*exp(sin(5.8*z))*cos(sin(t))
+    vy_fun(y, x, z, t)       = (1 - y^2)*exp(cos(5.8*z))*atan(cos(t))
+    vz_fun(y, x, z, t)       = sin(π*y)*sin(z)^2*cos(t)
+    wx_fun(y, x, z, t)       = cos(π*y)*(1 - y^2)*exp(sin(5.8*z))*cos(t)^2
+    wy_fun(y, x, z, t)       = cos(π*y/2)*cos(5.8*z)*sin(t)^2
+    wz_fun(y, x, z, t)       = cos(π*y/2)^4*sin(5.8*z)*atan(cos(t))
     duydy_fun(y, x, z, t)    = -2π*sin(π*y/2)*cos(π*y/2)^3*sin(5.8*z)*cos(sin(t))
     duzdz_fun(y, x, z, t)    = -5.8*(1 - y^2)*sin(5.8*z)*cos(cos(t))
     div_u_wx_fun(y, x, z, t) = (duydy_fun(y, x, z, t) + duzdz_fun(y, x, z, t))*wx_fun(y, x, z, t)
@@ -70,7 +70,7 @@ end
     # test perturbed nonlinear equations approximates linearised equations
     Re = rand()*50
     Ro = rand()
-    op_nl = CartesianPrimitiveNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE)
+    op_nl = CartesianPrimitiveNSE(g,  Re, Ro=Ro, flags=FFTW.ESTIMATE)
     op_ln = CartesianPrimitiveLNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE, adjoint=false)
     op_ad = CartesianPrimitiveLNSE(g, Re, Ro=Ro, flags=FFTW.ESTIMATE, adjoint=true)
     a = op_nl(0.0, u .+ 1e-6.*v, similar(u)) - op_nl(0.0, u, similar(u))

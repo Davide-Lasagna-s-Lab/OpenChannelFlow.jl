@@ -23,7 +23,7 @@
         @test eltype(u) == Float64
         @test size(u) == (Ny, data_size...)
         @test similar(u) isa Field{typeof(g), Float64}
-        @test similar(u, Float16) isa Field{typeof(g), Float16}
+        @test similar(u, Float16) isa Field{typeof(similar(g, Float16)), Float16}
         @test copy(u) == u
         @test zero(u) == Field(g, dealias=dealias)
     end

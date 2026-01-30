@@ -12,6 +12,11 @@
     β   = π
     T   = 10*rand()
 
+    # test similar
+    g = ChannelGrid(y, Nx, Nz, Nt, α, β, Dy, Dy2, ws)
+    @test         g           isa ChannelGrid{(Ny, Nx, Nz, Nt), Float64}
+    @test similar(g, Float32) isa ChannelGrid{(Ny, Nx, Nz, Nt), Float32}
+
     # test point generation
     g = ChannelGrid(y, Nx, Nz, Nt, α, β, Dy, Dy2, ws)
     pts = points(g, T)

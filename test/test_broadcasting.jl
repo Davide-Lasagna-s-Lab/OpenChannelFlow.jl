@@ -56,7 +56,7 @@
     @test fun(w, u, v) == 0
     u = VectorField(g, ((y, x, z, t)->1.0,), 1.0)
     v = VectorField(g, ((y, x, z, t)->(1 - y^2)*cos(2π*z)*atan(sin(2π*t)),), 1.0)
-    w = VectorField(g, N=1, type=Field)
+    w = VectorField(g, N=1, Field)
     @test fun(w, u, v) == 0
     u = ProjectedField(g, randn(ComplexF64, 3*Ny, 2, (Nx >> 1) + 1, Nz, Nt))
     v = ProjectedField(g, randn(ComplexF64, 3*Ny, 2, (Nx >> 1) + 1, Nz, Nt))

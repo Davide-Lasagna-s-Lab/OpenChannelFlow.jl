@@ -1,6 +1,8 @@
 # Implementation of the RPCF grid
 
-struct ChannelGrid{S, T, D1<:AbstractMatrix, D2<:AbstractMatrix}
+abstract type Abstract1DChannelGrid{S, T} end
+
+struct ChannelGrid{S, T, D1<:AbstractMatrix, D2<:AbstractMatrix} <: Abstract1DChannelGrid{S, T}
     y::Vector{T}
     Dy::D1
     Dy2::D2
@@ -8,11 +10,15 @@ struct ChannelGrid{S, T, D1<:AbstractMatrix, D2<:AbstractMatrix}
     α::T
     β::T
 
-    function ChannelGrid(y, Nx, Nz, Nt, α, β, Dy::D1, Dy2::D2, ws, ::Type{T}=Float64) where {T, D1, D2}
-        (isodd(Nx) && isodd(Nz) && isodd(Nt)) || throw(ArgumentError("grid must be odd in spanwise and time directions"))
-        new{(length(y), Nx, Nz, Nt), T, typeof(Dy), typeof(Dy2)}(T.(y), T.(Dy), T.(Dy2), T.(ws), T(α), T(β))
+    function ChannelGrid(y, Nx, Nz, Nt, α, β, Dy, Dy2, ws, ::Type{T}=Float64) where {T}
+        (isodd(Nx) && isodd(Nz) && isodd(Nt)) || throw(ArgumentError("grid must be odd in streamwise, spanwise, and time directions"))
+        length(y) == length(ws) == size(Dy, 1) == size(Dy2, 1) || throw(ArgumentError("grid variables not compatible sizes"))
+        Dy = T.(Dy); Dy2 = T.(Dy2)
+        new{(length(y), Nx, Nz, Nt), T, typeof(Dy), typeof(Dy2)}(T.(y), Dy, Dy2, T.(ws), T(α), T(β))
     end
 end
+
+Base.similar(g::ChannelGrid{S}, ::Type{T}) where {S, T} = ChannelGrid(g.y, S[2:end]..., g.α, g.β, g.Dy, g.Dy2, g.ws, T)
 
 # get points from grid
 points(g::ChannelGrid{S}, T) where {S}       = (                           g.y,

@@ -15,12 +15,12 @@
     end
 
     # test constructor
-    @test ProjectedField(g, Ψ) isa ProjectedField{FTField{typeof(g), Float64}, ComplexF64, 4, Array{ComplexF64, 5}}
+    @test ProjectedField(g, Ψ) isa ProjectedField{FTField{typeof(g), Float64, Array{ComplexF64, 4}}, ComplexF64, 4, Array{ComplexF64, 5}}
 
     # test channel integration
     u = ComplexF64[(y^2)*cos(π*y/2) for y in g.y]
     v = ComplexF64[exp(-5*(y^2)) for y in g.y]
-    @test OpenChannelFlow.channel_int(u, chebws(Ny), v, Ny) ≈ 0.0530025 rtol=1e-5
+    @test OpenChannelFlow._channel_int(u, chebws(Ny), v, Ny) ≈ 0.0530025 rtol=1e-5
 
     # test project and expand
     a = ProjectedField(g, Ψ)
@@ -32,7 +32,5 @@
         u[3][:, nx, nz, nt] .= Ψ[2*Ny+1:3*Ny, :, nx, nz, nt]*a[:, nx, nz, nt]
     end
     @test project(u, Ψ) ≈ a
-    for n in 1:3
-        @test expand!(similar(u), a)[n] ≈ u[n]
-    end
+    @test expand!(zero(u), a) ≈ u
 end

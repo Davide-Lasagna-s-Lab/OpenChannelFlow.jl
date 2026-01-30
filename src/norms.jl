@@ -3,7 +3,7 @@
 # ----------------------- #
 # standard inner products #
 # ----------------------- #
-function LinearAlgebra.dot(u::FTField{G, T}, v::FTField{G, T}) where {S, G<:ChannelGrid{S}, T}
+function LinearAlgebra.dot(u::FTField{G, T}, v::FTField{G, T}) where {S, G<:Abstract1DChannelGrid{S}, T}
     sum = zero(T)
     @loop_nznt S[4] S[3] for ny in 1:S[1]
         @inbounds sum += grid(u).ws[ny]*real(dot(u[ny, 1, _nz, _nt], v[ny, 1, _nz, _nt]))
@@ -14,7 +14,7 @@ function LinearAlgebra.dot(u::FTField{G, T}, v::FTField{G, T}) where {S, G<:Chan
     return sum/2
 end
 
-function LinearAlgebra.dot(a::ProjectedField{F, Complex{T}}, b::ProjectedField{F, Complex{T}}) where {S, F<:FTField{<:ChannelGrid{S}}, T}
+function LinearAlgebra.dot(a::ProjectedField{F, Complex{T}}, b::ProjectedField{F, Complex{T}}) where {S, F<:FTField{<:Abstract1DChannelGrid{S}}, T}
     sum = zero(T)
     @loop_nznt S[4] S[3] for m in axes(a, 1)
         @inbounds sum += real(dot(a[m, 1, _nz, _nt], b[m, 1, _nz, _nt]))
@@ -29,7 +29,7 @@ end
 # ----------- #
 # other norms #
 # ----------- #
-function normdiff(u::FTField{G, T}, v::FTField{G, T}, shifts=(0, 0, 0), tmp::FTField{G, T}=zero(v)) where {S, G<:ChannelGrid{S}, T}
+function normdiff(u::FTField{G, T}, v::FTField{G, T}, shifts=(0, 0, 0), tmp::FTField{G, T}=zero(v)) where {S, G<:Abstract1DChannelGrid{S}, T}
     sum = zero(T)
     tmp .= v
     shift!(tmp, shifts)
@@ -42,7 +42,7 @@ function normdiff(u::FTField{G, T}, v::FTField{G, T}, shifts=(0, 0, 0), tmp::FTF
     return sqrt(sum/2)
 end
 
-function normdiff(u::VectorField{N, FTField{G, T}}, v::VectorField{N, FTField{G, T}}, shifts=(0, 0, 0), tmp::FTField{G, T}=zero(u[1])) where {N, S, G<:ChannelGrid{S}, T}
+function normdiff(u::VectorField{N, <:FTField{G, T}}, v::VectorField{N, <:FTField{G, T}}, shifts=(0, 0, 0), tmp::FTField{G, T}=zero(u[1])) where {N, G, T}
     sum = zero(T)
     for n in 1:N
         sum += normdiff(u[n], v[n], shifts, tmp)^2
@@ -50,7 +50,7 @@ function normdiff(u::VectorField{N, FTField{G, T}}, v::VectorField{N, FTField{G,
     return sqrt(sum)
 end
 
-function normdiff(a::ProjectedField{S, T}, b::ProjectedField{S, T}, shifts=(0, 0, 0), tmp::ProjectedField{S, T}=zero(b)) where {S<:FTField, T}
+function normdiff(a::ProjectedField{F, T}, b::ProjectedField{F, T}, shifts=(0, 0, 0), tmp::ProjectedField{S, T}=zero(b)) where {S, F<:FTField{<:Abstract1DChannelGrid{S}}, T}
     throw(error("Method does not working for projected fields"))
     sum = zero(T)
     tmp .= b
@@ -64,8 +64,8 @@ function normdiff(a::ProjectedField{S, T}, b::ProjectedField{S, T}, shifts=(0, 0
     return sqrt(sum/2)
 end
 
-function minnormdiff(u::Union{FTField{G}, VectorField{D, FTField{G}}, ProjectedField{FTField{G}}},
-                     v::Union{FTField{G}, VectorField{D, FTField{G}}, ProjectedField{FTField{G}}},
+function minnormdiff(u::Union{FTField{G}, VectorField{D, <:FTField{G}}, ProjectedField{<:FTField{G}}},
+                     v::Union{FTField{G}, VectorField{D, <:FTField{G}}, ProjectedField{<:FTField{G}}},
                      N::NTuple{3, Int}=(32, 32, 32),
                   tmp1::FTField{G}=zero(v),
                   tmp2::FTField{G}=zero(v)) where {D, G}

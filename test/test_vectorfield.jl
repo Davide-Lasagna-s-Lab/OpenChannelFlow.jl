@@ -9,38 +9,38 @@
 
     # test vectorfield construction
     u = @test_nowarn VectorField(g)
-    @test u isa VectorField{3, FTField{typeof(g), Float64}}
-    u = @test_nowarn VectorField(g, Float32)
-    @test u isa VectorField{3, FTField{typeof(g), Float32}}
+    @test u isa VectorField{3, FTField{typeof(g), Float64, Array{ComplexF64, 4}}}
+    u = @test_nowarn VectorField(similar(g, Float32))
+    @test u isa VectorField{3, FTField{typeof(similar(g, Float32)), Float32, Array{ComplexF32, 4}}}
     u = @test_nowarn VectorField(g, N=2)
-    @test u isa VectorField{2, FTField{typeof(g), Float64}}
-    u = @test_nowarn VectorField(g, type=Field)
-    @test u isa VectorField{3, Field{typeof(g), Float64}}
-    u = @test_nowarn VectorField(g, type=Field, dealias=false)
-    @test u isa VectorField{3, Field{typeof(g), Float64}}
-    u = @test_nowarn VectorField(g, type=Field, dealias=true)
-    @test u isa VectorField{3, Field{typeof(g), Float64}}
+    @test u isa VectorField{2, FTField{typeof(g), Float64, Array{ComplexF64, 4}}}
+    u = @test_nowarn VectorField(g, Field)
+    @test u isa VectorField{3, Field{typeof(g), Float64, Array{Float64, 4}}}
+    u = @test_nowarn VectorField(g, Field, dealias=false)
+    @test u isa VectorField{3, Field{typeof(g), Float64, Array{Float64, 4}}}
+    u = @test_nowarn VectorField(g, Field, dealias=true)
+    @test u isa VectorField{3, Field{typeof(g), Float64, Array{Float64, 4}}}
     @test size(u[1]) == (Ny, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true))...)
     u = @test_nowarn VectorField(g, ((y, x, z, t)->1.0, (y, x, z, t)->(1 - y^2)*cos(2π*z)), 1.0)
-    @test u isa VectorField{2, Field{typeof(g), Float64}}
-    @test all(u[1] .== 1.0)
+    @test u isa VectorField{2, Field{typeof(g), Float64, Array{Float64, 4}}}
+    @test all(parent(u[1]) .== 1.0)
     pts = points(g, 1.0)
-    @test all(u[2] .== (1 .- reshape(pts[1], :, 1, 1, 1).^2).*cos.(2π.*reshape(pts[3], 1, 1, :, 1)))
+    @test all(parent(u[2]) .== (1 .- reshape(pts[1], :, 1, 1, 1).^2).*cos.(2π.*reshape(pts[3], 1, 1, :, 1)))
     u = @test_nowarn VectorField(g, ((y, x, z, t)->1.0, (y, x, z, t)->(1 - y^2)*cos(2π*z)), 1.0, dealias=true)
-    @test u isa VectorField{2, Field{typeof(g), Float64}}
-    @test all(u[1] .== 1.0)
+    @test u isa VectorField{2, Field{typeof(g), Float64, Array{Float64, 4}}}
+    @test all(parent(u[1]) .== 1.0)
     pts = points(g, 1.0, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true)))
-    @test all(u[2] .== (1 .- reshape(pts[1], :, 1, 1, 1).^2).*cos.(2π.*reshape(pts[3], 1, 1, :, 1)))
+    @test all(parent(u[2]) .== (1 .- reshape(pts[1], :, 1, 1, 1).^2).*cos.(2π.*reshape(pts[3], 1, 1, :, 1)))
 
     # test interface
     @test size(u) == (2,)
     @test length(u) == 2
     @test eltype(u) == typeof(Field(g))
-    @test similar(u) isa VectorField{2, Field{typeof(g), Float64}}
+    @test similar(u) isa VectorField{2, Field{typeof(g), Float64, Array{Float64, 4}}}
     @test copy(u)[1] == u[1]
     @test copy(u)[2] == u[2]
-    @test all(zero(u)[1] .== 0.0)
-    @test all(zero(u)[2] .== 0.0)
+    @test all(parent(zero(u)[1]) .== 0.0)
+    @test all(parent(zero(u)[2]) .== 0.0)
 
     # test growto
     u = VectorField(g)
