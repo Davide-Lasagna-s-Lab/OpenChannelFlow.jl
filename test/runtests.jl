@@ -4,7 +4,7 @@ using FFTW, Random, LinearAlgebra
 
 using ChebUtils
 
-using OpenChannelFlow
+using ReSolverChannelFlow
 
 include("test_grid.jl")
 include("test_modenumber.jl")

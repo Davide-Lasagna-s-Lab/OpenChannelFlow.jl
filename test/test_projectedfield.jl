@@ -20,7 +20,7 @@
     # test channel integration
     u = ComplexF64[(y^2)*cos(π*y/2) for y in g.y]
     v = ComplexF64[exp(-5*(y^2)) for y in g.y]
-    @test OpenChannelFlow._channel_int(u, chebws(Ny), v, Ny) ≈ 0.0530025 rtol=1e-5
+    @test ReSolverChannelFlow._channel_int(u, chebws(Ny), v, Ny) ≈ 0.0530025 rtol=1e-5
 
     # test project and expand
     a = ProjectedField(g, Ψ)

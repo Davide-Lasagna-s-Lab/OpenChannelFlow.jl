@@ -20,7 +20,7 @@
     @test u isa VectorField{3, Field{typeof(g), Float64, Array{Float64, 4}}}
     u = @test_nowarn VectorField(g, Field, dealias=true)
     @test u isa VectorField{3, Field{typeof(g), Float64, Array{Float64, 4}}}
-    @test size(u[1]) == (Ny, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true))...)
+    @test size(u[1]) == (Ny, ReSolverChannelFlow._padded_size((Nx, Nz, Nt), Val(true))...)
     u = @test_nowarn VectorField(g, ((y, x, z, t)->1.0, (y, x, z, t)->(1 - y^2)*cos(2π*z)), 1.0)
     @test u isa VectorField{2, Field{typeof(g), Float64, Array{Float64, 4}}}
     @test all(parent(u[1]) .== 1.0)
@@ -29,7 +29,7 @@
     u = @test_nowarn VectorField(g, ((y, x, z, t)->1.0, (y, x, z, t)->(1 - y^2)*cos(2π*z)), 1.0, dealias=true)
     @test u isa VectorField{2, Field{typeof(g), Float64, Array{Float64, 4}}}
     @test all(parent(u[1]) .== 1.0)
-    pts = points(g, 1.0, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true)))
+    pts = points(g, 1.0, ReSolverChannelFlow._padded_size((Nx, Nz, Nt), Val(true)))
     @test all(parent(u[2]) .== (1 .- reshape(pts[1], :, 1, 1, 1).^2).*cos.(2π.*reshape(pts[3], 1, 1, :, 1)))
 
     # test interface

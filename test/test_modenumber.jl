@@ -7,13 +7,13 @@
     nts = [collect(0:(Nt >> 1)); collect(-(Nt >> 1):-1)]
     for _nx in 1:(Nx >> 1) + 1, _nz in 1:Nz, _nt in 1:Nt
         n = ModeNumber(nxs[_nx], nzs[_nz], nts[_nt])
-        @test OpenChannelFlow._convert_modenumber(n, Nz, Nt) == (_nx, _nz, _nt, false)
+        @test ReSolverChannelFlow._convert_modenumber(n, Nz, Nt) == (_nx, _nz, _nt, false)
     end
     nxs = collect(0:-1:-(Nx >> 1))
     nzs = [[0]; collect(-1:-1:-(Nz >> 1)); collect((Nz >> 1:-1:1))]
     nts = [[0]; collect(-1:-1:-(Nt >> 1)); collect((Nt >> 1:-1:1))]
     for _nx in 2:(Nx >> 1) + 1, _nz in 1:Nz, _nt in 1:Nt
         n = ModeNumber(nxs[_nx], nzs[_nz], nts[_nt])
-        @test OpenChannelFlow._convert_modenumber(n, Nz, Nt) == (_nx, _nz, _nt, true)
+        @test ReSolverChannelFlow._convert_modenumber(n, Nz, Nt) == (_nx, _nz, _nt, true)
     end
 end

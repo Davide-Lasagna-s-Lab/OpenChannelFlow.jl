@@ -22,7 +22,7 @@
     #     Ψ[:, :, nx, nz, nt] .= qr(randn(ComplexF64, 3*Ny, M)).Q[:, 1:M]
     # end
     # for m in 1:M
-    #     OpenChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :, :]))
+    #     ReSolverChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :, :]))
     #     Ψ[:, m, 1, 1, 1] .= real.(Ψ[:, m, 1, 1, 1])
     # end
 

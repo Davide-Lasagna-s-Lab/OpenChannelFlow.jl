@@ -42,8 +42,8 @@
     b .= randn(ComplexF64, M, (Nx >> 1) + 1, Nz, Nt)
     a[:, 1, 1, 1] .= real.(a[:, 1, 1, 1])
     b[:, 1, 1, 1] .= real.(b[:, 1, 1, 1])
-    OpenChannelFlow.apply_symmetry!(a)
-    OpenChannelFlow.apply_symmetry!(b)
+    ReSolverChannelFlow.apply_symmetry!(a)
+    ReSolverChannelFlow.apply_symmetry!(b)
     u = expand!(VectorField(g), a)
     u[1][:, 1, 1, 1] .+= g.y
     v = expand!(VectorField(g), b)

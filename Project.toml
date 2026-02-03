@@ -1,4 +1,4 @@
-name = "OpenChannelFlow"
+name = "ReSolverChannelFlow"
 uuid = "ea847659-7271-4841-b0fc-79dd10df6815"
 version = "0.1.0"
 authors = ["Thomas Burton <tburton5572@gmail.com>"]

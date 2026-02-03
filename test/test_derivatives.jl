@@ -20,10 +20,10 @@
 
     # test values of derivatives
     u = FFT(Field(g, u_fun, 2π))
-    @test OpenChannelFlow.ddx1!(     FTField(g), u) ≈ FFT(Field(g, dudx_fun,   2π))
-    @test OpenChannelFlow.ddx2!(     FTField(g), u) ≈ FFT(Field(g, dudy_fun,   2π))
-    @test OpenChannelFlow.ddx3!(     FTField(g), u) ≈ FFT(Field(g, dudz_fun,   2π))
-    @test OpenChannelFlow.laplacian!(FTField(g), u) ≈ FFT(Field(g, lapl_fun,   2π))
+    @test ReSolverChannelFlow.ddx1!(     FTField(g), u) ≈ FFT(Field(g, dudx_fun,   2π))
+    @test ReSolverChannelFlow.ddx2!(     FTField(g), u) ≈ FFT(Field(g, dudy_fun,   2π))
+    @test ReSolverChannelFlow.ddx3!(     FTField(g), u) ≈ FFT(Field(g, dudz_fun,   2π))
+    @test ReSolverChannelFlow.laplacian!(FTField(g), u) ≈ FFT(Field(g, lapl_fun,   2π))
 
     # test time derivative of projected field
     M = 10
@@ -32,17 +32,17 @@
         Ψ[:, :, nx, nz, nt] .= qr(randn(ComplexF64, Ny, M)).Q[:, 1:M]
     end
     for m in 1:M
-        OpenChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :, :]))
+        ReSolverChannelFlow.apply_symmetry!(@view(Ψ[:, m, :, :, :]))
         Ψ[:, m, 1, 1, 1] .= real.(Ψ[:, m, 1, 1, 1])
     end
     a = project(FFT(VectorField(g, (u_fun,), 2π)), Ψ)
-    @test OpenChannelFlow.dds!(similar(a), a) ≈ project(FFT(VectorField(g, (duds_fun,), 2π)), Ψ)
+    @test ReSolverChannelFlow.dds!(similar(a), a) ≈ project(FFT(VectorField(g, (duds_fun,), 2π)), Ψ)
 
     # test allocation
     fun(dx, a, b) = @allocated dx(a, b)
-    @test fun(OpenChannelFlow.ddx1!,      FTField(g), u) == 0
-    @test fun(OpenChannelFlow.ddx2!,      FTField(g), u) == 0
-    @test fun(OpenChannelFlow.ddx3!,      FTField(g), u) == 0
-    @test fun(OpenChannelFlow.laplacian!, FTField(g), u) == 0
-    @test fun(OpenChannelFlow.dds!,       similar(a), a) == 0
+    @test fun(ReSolverChannelFlow.ddx1!,      FTField(g), u) == 0
+    @test fun(ReSolverChannelFlow.ddx2!,      FTField(g), u) == 0
+    @test fun(ReSolverChannelFlow.ddx3!,      FTField(g), u) == 0
+    @test fun(ReSolverChannelFlow.laplacian!, FTField(g), u) == 0
+    @test fun(ReSolverChannelFlow.dds!,       similar(a), a) == 0
 end

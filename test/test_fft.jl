@@ -8,12 +8,12 @@
                     chebws(Ny))
 
     # create plans
-    plans  = @test_nowarn OpenChannelFlow.FFTPlans((Ny, Nx, Nz, Nt), (2, 3, 4), dealias=false, flags=FFTW.ESTIMATE)
-    plansd = @test_nowarn OpenChannelFlow.FFTPlans((Ny, Nx, Nz, Nt), (2, 3, 4), dealias=true,  flags=FFTW.ESTIMATE)
+    plans  = @test_nowarn ReSolverChannelFlow.FFTPlans((Ny, Nx, Nz, Nt), (2, 3, 4), dealias=false, flags=FFTW.ESTIMATE)
+    plansd = @test_nowarn ReSolverChannelFlow.FFTPlans((Ny, Nx, Nz, Nt), (2, 3, 4), dealias=true,  flags=FFTW.ESTIMATE)
 
     # randon signal
     U  = FTField(g, rand(ComplexF64, Ny, (Nx >> 1) + 1, Nz, Nt))
-    Ud = growto(U, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true)))
+    Ud = growto(U, ReSolverChannelFlow._padded_size((Nx, Nz, Nt), Val(true)))
     u  = Field(g)
     ud = Field(g, dealias=true)
 
@@ -33,15 +33,15 @@
     # test allocating transforms
     @test FFT(plans(similar(u), U)) ≈ U
     @test IFFT(U) == plans(similar(u), U)
-    @test FFT(plans(similar(u), U), OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true))) ≈ Ud
-    @test IFFT(U, OpenChannelFlow._padded_size((Nx, Nz, Nt), Val(true))) == plansd(similar(ud), U)
+    @test FFT(plans(similar(u), U), ReSolverChannelFlow._padded_size((Nx, Nz, Nt), Val(true))) ≈ Ud
+    @test IFFT(U, ReSolverChannelFlow._padded_size((Nx, Nz, Nt), Val(true))) == plansd(similar(ud), U)
 
     # vector field transforms
     U = VectorField(g)
     for n in 1:3
         parent(U[n]) .= randn(ComplexF64, Ny, (Nx >> 1) + 1, Nz, Nt)
         parent(U[n])[:, 1, 1, 1] .= real.(parent(U[n])[:, 1, 1, 1])
-        OpenChannelFlow.apply_symmetry!(parent(U[n]))
+        ReSolverChannelFlow.apply_symmetry!(parent(U[n]))
     end
     u = VectorField(g, Field)
     U_new = plans(similar(U), plans(u, U))

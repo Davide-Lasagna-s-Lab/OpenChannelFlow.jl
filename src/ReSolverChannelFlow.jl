@@ -1,4 +1,4 @@
-module OpenChannelFlow
+module ReSolverChannelFlow
 
 using FFTW, LinearAlgebra
 

@@ -10,7 +10,7 @@
     for dealias in [false, true]
         # test constructors
         u = Field(g, dealias=dealias)
-        data_size = OpenChannelFlow._padded_size((Nx, Nz, Nt), dealias ? Val(true) : Val(false))
+        data_size = ReSolverChannelFlow._padded_size((Nx, Nz, Nt), dealias ? Val(true) : Val(false))
         @test u.data == zeros(Ny, data_size...)
         fun(y, x, z, t) = (1 - y^2)*exp(sin(x))*cos(z)*sin(t)
         u = Field(g, fun, 2π, dealias=dealias)
