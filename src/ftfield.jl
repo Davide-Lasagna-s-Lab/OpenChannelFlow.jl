@@ -3,7 +3,6 @@
 # -------------- #
 # spectral field #
 # -------------- #
-# ! is the T type parameter necessary?
 struct FTField{G, T, A<:AbstractArray{Complex{T}, 4}} <: AbstractScalarField{4, Complex{T}}
     grid::G
     data::A
@@ -14,7 +13,6 @@ struct FTField{G, T, A<:AbstractArray{Complex{T}, 4}} <: AbstractScalarField{4, 
     end
 
     # sequential array constructor
-    # ! is this necessary? !
     function FTField(g::G, data::Array) where {S, T, G<:Abstract1DChannelGrid{S, T}}
         apply_symmetry!(data)
         data[:, 1, 1, 1] .= real.(data[:, 1, 1, 1])
@@ -23,8 +21,8 @@ struct FTField{G, T, A<:AbstractArray{Complex{T}, 4}} <: AbstractScalarField{4, 
 end
 FTField(g::G) where {S, T, G<:ChannelGrid{S, T}} = FTField(g, zeros(Complex{T}, S[1], (S[2] >> 1) + 1, S[3], S[4]))
 
-Base.parent(u::FTField)                                 = u.data
-Base.eltype(::FTField{G, T}) where {G, T}               = Complex{T}
+Base.parent(u::FTField)                                          = u.data
+Base.eltype(::FTField{G, T}) where {G, T}                        = Complex{T}
 Base.similar(u::FTField, ::Type{Complex{T}}=eltype(u)) where {T} = FTField(similar(grid(u), T), similar(parent(u)))
 
 NSEBase.hsize(::FTField{<:Abstract1DChannelGrid{S}}) where {S} = ((S[2] >> 1) + 1, S[3], S[4])
@@ -34,13 +32,13 @@ NSEBase.hsize(::FTField{<:Abstract1DChannelGrid{S}}) where {S} = ((S[2] >> 1) + 
 # indexing methods #
 # ---------------- #
 # mode number idexing
-Base.@propagate_inbounds function Base.getindex(u::FTField{G}, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
+Base.@propagate_inbounds function Base.getindex(u::FTField{G}, ny::Int, n::ModeNumber) where {S, G<:Abstract1DChannelGrid{S}}
     _nx, _nz, _nt, do_conj = _convert_modenumber(n, S[3], S[4])
     @boundscheck checkbounds(u, ny, _nx, _nz, _nt)
     @inbounds val = do_conj ? conj(u[ny, _nx, _nz, _nt]) : u[ny, _nx, _nz, _nt]
     return val
 end
-Base.@propagate_inbounds function Base.setindex!(u::FTField{G, T}, val, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}, T}
+Base.@propagate_inbounds function Base.setindex!(u::FTField{G, T}, val, ny::Int, n::ModeNumber) where {S, G<:Abstract1DChannelGrid{S}, T}
     _nx, _nz, _nt, do_conj = _convert_modenumber(n, S[3], S[4])
     _nz_sym = _nz != 1 ? S[3] - _nz + 2 : _nz
     _nt_sym = _nt != 1 ? S[4] - _nt + 2 : _nt
@@ -51,13 +49,13 @@ Base.@propagate_inbounds function Base.setindex!(u::FTField{G, T}, val, ny::Int,
     return val
 end
 
-Base.@propagate_inbounds function Base.getindex(a::ProjectedField{<:FTField{G}}, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}}
+Base.@propagate_inbounds function Base.getindex(a::ProjectedField{<:FTField{G}}, ny::Int, n::ModeNumber) where {S, G<:Abstract1DChannelGrid{S}}
     _nx, _nz, _nt, do_conj = _convert_modenumber(n, S[3], S[4])
     @boundscheck checkbounds(a, ny, _nx, _nz, _nt)
     @inbounds val = do_conj ? conj(a[ny, _nx, _nz, _nt]) : a[ny, _nx, _nz, _nt]
     return val
 end
-Base.@propagate_inbounds function Base.setindex!(a::ProjectedField{<:FTField{G}, T}, val, ny::Int, n::ModeNumber) where {S, G<:ChannelGrid{S}, T}
+Base.@propagate_inbounds function Base.setindex!(a::ProjectedField{<:FTField{G}, T}, val, ny::Int, n::ModeNumber) where {S, G<:Abstract1DChannelGrid{S}, T}
     _nx, _nz, _nt, do_conj = _convert_modenumber(n, S[3], S[4])
     _nz_sym = _nz != 1 ? S[3] - _nz + 2 : _nz
     _nt_sym = _nt != 1 ? S[3] - _nt + 2 : _nt
@@ -172,14 +170,14 @@ end
 # ------------------ #
 # read-write methods #
 # ------------------ #
-function write(a::ProjectedField{<:FTField{<:Abstract1DChannelGrid}}; path="./a.jld2")
+function save(a::ProjectedField{<:FTField{<:Abstract1DChannelGrid}}; path="./a.jld2")
     jldopen(path, "w") do f
         f["data"] = parent(a)
     end
     return nothing
 end
 
-function read(g::ChannelGrid, modes, path)
+function load(g::ChannelGrid, modes, path)
     # read coefficients of projected field
     data = jldopen(path, "r") do f
         return f["data"]

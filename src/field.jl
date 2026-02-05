@@ -10,7 +10,6 @@ struct Field{G, T, A<:AbstractArray{T, 4}} <: AbstractScalarField{4, T}
     end
 
     # sequential array constructor
-    # ! is this constructor required? !
     function Field(g::G, data::Array) where {S, T, G<:Abstract1DChannelGrid{S, T}}
         all(isodd.(size(data)[2:4])) || throw(ArgumentError("data must be odd"))
         new{G, T, Array{T, 4}}(g, T.(data))

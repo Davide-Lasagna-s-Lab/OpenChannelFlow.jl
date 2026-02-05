@@ -6,7 +6,7 @@ using NSEBase
 
 export ChannelGrid, points, growto, get_fields
 export ModeNumber
-export FTField, grid
+export FTField, grid, save, load
 export Field
 export VectorField
 export ProjectedField, modes, project!, project, expand!, expand
