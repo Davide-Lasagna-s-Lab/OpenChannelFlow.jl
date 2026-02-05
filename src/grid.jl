@@ -35,3 +35,17 @@ growto(g::ChannelGrid, N::NTuple{3, Int}) = ChannelGrid(g.y, N..., g.α, g.β, g
 
 # utility method to make mode generation easier with Resolvent.jl
 get_fields(g::ChannelGrid) = (g.Dy, g.Dy2, g.ws, g.α, g.β)
+
+# read-write methods
+function write(g::ChannelGrid; path="./grid.jld2")
+    jldopen(path, "w") do f
+        f["grid"] = g
+    end
+    return nothing
+end
+
+function read(path)
+    jldopen(path, "r") do f
+        return f["grid"]
+    end
+end

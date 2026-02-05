@@ -167,3 +167,23 @@ function _average_complex(z1, z2)
     _im = 0.5*(imag(z1) - imag(z2))
     return _re + 1im*_im
 end
+
+
+# ------------------ #
+# read-write methods #
+# ------------------ #
+function write(a::ProjectedField{<:FTField{<:Abstract1DChannelGrid}}; path="./a.jld2")
+    jldopen(path, "w") do f
+        f["data"] = parent(a)
+    end
+    return nothing
+end
+
+function read(g::ChannelGrid, modes, path)
+    # read coefficients of projected field
+    data = jldopen(path, "r") do f
+        return f["data"]
+    end
+
+    return ProjectedField(typeof(FTField(g)), data, modes)
+end
