@@ -114,7 +114,7 @@ function NSEBase.ProjectedNSE(g::Abstract1DChannelGrid{S, T}, Re; Ro=0, base::Ve
     nl = CartesianPrimitiveNSE(T(Re), T(Ro), plans, scache, pcache)
     ln = CartesianPrimitiveLNSE(T(Re), T(Ro), plans, scache, pcache, adjoint)
 
-    return ProjectedNSE(scache[1][1], nl, ln, T.(base), T)
+    return ProjectedNSE(scache[1][1], nl, ln, T.(base))
 end
 
 
