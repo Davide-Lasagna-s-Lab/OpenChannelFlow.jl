@@ -23,7 +23,7 @@ FTField(g::G) where {S, T, G<:ChannelGrid{S, T}} = FTField(g, zeros(Complex{T}, 
 
 Base.parent(u::FTField)                                          = u.data
 Base.eltype(::FTField{G, T}) where {G, T}                        = Complex{T}
-Base.similar(u::FTField, ::Type{Complex{T}}=eltype(u)) where {T} = FTField(similar(grid(u), T), similar(parent(u)))
+Base.similar(u::FTField, ::Type{Complex{T}}=eltype(u)) where {T} = FTField(similar(grid(u), T), zero(parent(u)))
 
 NSEBase.hsize(::FTField{<:Abstract1DChannelGrid{S}}) where {S} = ((S[2] >> 1) + 1, S[3], S[4])
 

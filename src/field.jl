@@ -32,7 +32,7 @@ end
 # ------------- #
 Base.parent(u::Field)                                 = u.data
 Base.eltype(::Field{G, T}) where {G, T}               = T
-Base.similar(u::Field, ::Type{T}=eltype(u)) where {T} = Field(similar(grid(u), T), similar(parent(u)))
+Base.similar(u::Field, ::Type{T}=eltype(u)) where {T} = Field(similar(grid(u), T), zero(parent(u)))
 
 
 # --------------- #
